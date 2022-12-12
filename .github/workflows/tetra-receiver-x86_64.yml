@@ -1,0 +1,12 @@
+
+name: "tetra-receiver-x86_64"
+
+on: [push, pull_request]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: cachix/install-nix-action@v17
+      - run: nix build -vL .\#packages.x86_64-linux.tetra-receiver
