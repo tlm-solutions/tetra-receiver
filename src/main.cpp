@@ -22,72 +22,82 @@
 #include <gnuradio/prefs.h>
 #include <gnuradio/sys_paths.h>
 #include <gnuradio/top_block.h>
+
 #include <osmosdr/source.h>
 
-// TODO: replace with cxxopts
-void usage(char *argv0) {
-  std::cout << "Usage: " << argv0
-            << " {frequency} {offset}{,offset}* {rf} {if} {bb} [device]"
-            << std::endl;
-}
+#include <cxxopts.hpp>
 
 int main(int argc, char **argv) {
-  float freq = 170795000;
-  float xlat_center_freq = 19500;
-  float samp_rate = 20000000;
-  int RF, IF, BB;
-
-  // TODO: init this variable from arg parsing
+  osmosdr::source::sptr src;
   std::vector<int> offsets;
+  unsigned int samp_rate;
+  unsigned int udp_start;
 
-  std::string device_string = "";
+  try {
+    cxxopts::Options options(
+        "tetra-receiver",
+        "Receive multiple TETRA streams at once and send the bits out via UDP");
 
-  // Argument parsing
-  if (argc != 6 && argc != 7) {
-    usage(*argv);
+    // clang-format off
+    options.add_options()
+      ("h,help", "Print usage")
+      ("rf", "RF gain", cxxopts::value<unsigned int>()->default_value("10"))
+      ("if", "IF gain", cxxopts::value<unsigned int>()->default_value("10"))
+      ("bb", "BB gain", cxxopts::value<unsigned int>()->default_value("10"))
+      ("device-string", "additional device arguments for osmosdr, see https://projects.osmocom.org/projects/gr-osmosdr/wiki/GrOsmoSDR", cxxopts::value<std::string>()->default_value(""))
+      ("center-frequency", "Center frequency of the SDR", cxxopts::value<unsigned int>()->default_value("0"))
+      ("offsets", "Offsets of the TETRA streams", cxxopts::value<std::vector<int>>())
+      ("samp-rate", "Sample rate of the sdr", cxxopts::value<unsigned int>()->default_value("1000000"))
+      ("udp-start", "Start UDP port. Each stream gets its own UDP port, starting at udp-start", cxxopts::value<unsigned int>()->default_value("42000"))
+      ;
+    // clang-format on
+
+    auto result = options.parse(argc, argv);
+
+    if (result.count("help")) {
+      std::cout << options.help() << std::endl;
+      exit(0);
+    }
+
+    samp_rate = result["samp-rate"].as<unsigned int>();
+
+    std::string ver = gr::version();
+    std::string cCompiler = gr::c_compiler();
+    std::string cxxCompiler = gr::cxx_compiler();
+    std::string compilerFlags = gr::compiler_flags();
+    std::string prefs = gr::prefs::singleton()->to_string();
+
+    std::cout << "GNU Radio Version: " << ver
+              << "\n\n C Compiler: " << cCompiler
+              << "\n\n CXX Compiler: " << cxxCompiler << "\n\n Prefs: " << prefs
+              << "\n\n Compiler Flags: " << compilerFlags << "\n\n";
+
+    // setup osmosdr source
+    src = osmosdr::source::make(result["device-string"].as<std::string>());
+    src->set_block_alias("src");
+
+    src->set_sample_rate(samp_rate);
+    src->set_center_freq(result["center-frequency"].as<unsigned int>());
+    src->set_gain_mode(false, 0);
+    src->set_gain(result["rf"].as<unsigned int>(), "RF", 0);
+    src->set_gain(result["if"].as<unsigned int>(), "IF", 0);
+    src->set_gain(result["bb"].as<unsigned int>(), "BB", 0);
+    src->set_bandwidth(samp_rate / 2, 0);
+
+    // create the decoding blocks for each tetra stream
+    offsets = result["offsets"].as<std::vector<int>>();
+    udp_start = result["udp-start"].as<unsigned int>();
+  } catch (std::exception &e) {
+    std::cout << "error parsing options: " << e.what() << std::endl;
     return EXIT_FAILURE;
   }
 
-  freq = strtof(argv[1], NULL);
-  xlat_center_freq = strtof(argv[2], NULL);
-  RF = atoi(argv[3]);
-  IF = atoi(argv[4]);
-  BB = atoi(argv[5]);
-
-  if (argc == 7) {
-    device_string = std::string(argv[6]);
-  }
-
-  std::string ver = gr::version();
-  std::string cCompiler = gr::c_compiler();
-  std::string cxxCompiler = gr::cxx_compiler();
-  std::string compilerFlags = gr::compiler_flags();
-  std::string prefs = gr::prefs::singleton()->to_string();
-
-  std::cout << "GNU Radio Version: " << ver << "\n\n C Compiler: " << cCompiler
-            << "\n\n CXX Compiler: " << cxxCompiler << "\n\n Prefs: " << prefs
-            << "\n\n Compiler Flags: " << compilerFlags << "\n\n";
-
   auto tb = gr::make_top_block("fg");
 
-  // setup osmosdr source
-  osmosdr::source::sptr src;
-  src = osmosdr::source::make(device_string);
-  src->set_block_alias("src");
-
-  src->set_sample_rate(samp_rate);
-  src->set_center_freq(freq);
-  src->set_gain_mode(false, 0);
-  src->set_gain(RF, "RF", 0);
-  src->set_gain(IF, "IF", 0);
-  src->set_gain(BB, "BB", 0);
-  src->set_bandwidth(samp_rate / 2, 0);
-
-  // create the decoding blocks for each tetra stream
   auto it = offsets.begin();
   for (; it != offsets.end(); ++it) {
     auto offset = *it;
-    auto udp_port = 42000 + std::distance(offsets.begin(), it);
+    auto udp_port = udp_start + std::distance(offsets.begin(), it);
     auto decimation = 32.0f;
     auto channel_rate = 36000;
     auto sps = 2;
@@ -119,8 +129,8 @@ int main(int argc, char **argv) {
         gr::digital::map_bb::make(constellation->pre_diff_code());
     auto blocks_unpack_k_bits_bb =
         gr::blocks::unpack_k_bits_bb::make(constellation->bits_per_symbol());
-    auto blocks_udp_sink =
-        gr::blocks::udp_sink::make(sizeof(char), "127.0.0.1", udp_port, false);
+    auto blocks_udp_sink = gr::blocks::udp_sink::make(sizeof(char), "127.0.0.1",
+                                                      udp_port, 1472, false);
 
     try {
       tb->connect(src, 0, xlat, 0);

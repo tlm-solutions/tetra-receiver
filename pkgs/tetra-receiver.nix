@@ -5,16 +5,11 @@
 , gnuradioPackages
 , log4cpp
 , mpir
-, gmp
 , gmpxx
-, thrift
-, hackrf
-, rtl-sdr
-, fftwFloat
-, patchelf
+, cxxopts
 }:
 let
-  osmosdr = gnuradioPackages.osmosdr.overrideAttrs(oldAttrs: {
+  osmosdr = gnuradioPackages.osmosdr.overrideAttrs(_oldAttrs: {
     outputs = [ "out" ];
   });
 in
@@ -24,8 +19,8 @@ stdenv.mkDerivation {
 
   src = ./..;
 
-  nativeBuildInputs = [ cmake pkg-config gnuradio.unwrapped ];
-  buildInputs = [ log4cpp mpir gnuradio.unwrapped.boost.dev gmpxx.dev gnuradio.unwrapped.volk osmosdr ];
+  nativeBuildInputs = [ cmake pkg-config ];
+  buildInputs = [ log4cpp mpir gnuradio.unwrapped gnuradio.unwrapped.boost.dev gmpxx.dev gnuradio.unwrapped.volk osmosdr cxxopts ];
 
-  cmakeFlags = [ "-DOSMOSDR_DIR=${osmosdr}" "-DCMAKE_PREFIX_PATH=${osmosdr}/lib/cmake/osmosdr" ];
+  cmakeFlags = [ "-DCMAKE_PREFIX_PATH=${osmosdr}/lib/cmake/osmosdr" ];
 }

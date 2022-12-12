@@ -8,7 +8,7 @@
     };
   };
 
-  outputs = inputs@{ self, utils, nixpkgs, ... }:
+  outputs = { self, utils, nixpkgs, ... }:
     utils.lib.eachDefaultSystem
       (system:
         let
