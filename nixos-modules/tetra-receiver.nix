@@ -73,9 +73,9 @@ in {
       wantedBy = [ "multi-user.target" ];
 
       script = ''
-        exec ${pkgs.tetra-receiver}/bin/tetra-receiver --rf ${cfg.rfGain} --if ${cfg.ifGain} --bb ${cfg.bbGain} --device-string ${cfg.deviceString} --offsets ${
-          lib.concatStringsSep "," cfg.offsets
-        } --samp-rate ${cfg.sampRate} --udp-start ${cfg.udpStart} &
+        exec ${pkgs.tetra-receiver}/bin/tetra-receiver --rf ${toString cfg.rfGain} --if ${toString cfg.ifGain} --bb ${toString cfg.bbGain} --device-string ${cfg.deviceString} --offsets ${
+          lib.concatMapStringsSep "," toString cfg.offsets
+        } --samp-rate ${toString cfg.sampRate} --udp-start ${toString cfg.udpStart} &
       '';
 
       serviceConfig = {
