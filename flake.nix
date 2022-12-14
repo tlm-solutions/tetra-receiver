@@ -2,10 +2,7 @@
   inputs = {
     nixpkgs.url = github:NixOS/nixpkgs/nixos-22.11;
 
-    utils = {
-      url = "github:numtide/flake-utils";
-      inputs.nixpkgs.follows = "nixpkgs";
-    };
+    utils.url = "github:numtide/flake-utils";
   };
 
   outputs = { self, utils, nixpkgs, ... }:
@@ -33,6 +30,22 @@
           };
         }
       ) // {
+      overlays.default = final: prev: {
+        inherit (self.packages."x86_64-linux")
+        tetra-receiver;
+      };
+      nixosModules = {
+        tetra-receiver = {
+          imports = [
+            ./nixos-modules/tetra-receiver.nix
+          ];
+          
+          nixpkgs.overlays = [
+            self.overlays.default
+          ];
+        };
+        default = self.nixosModules.tetra-receiver;
+      };
       hydraJobs =
         let
           hydraSystems = [ "x86_64-linux" ];
