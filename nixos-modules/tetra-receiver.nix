@@ -73,9 +73,9 @@ in {
       wantedBy = [ "multi-user.target" ];
 
       script = ''
-        exec ${pkgs.tetra-receiver}/bin/tetra-receiver --rf ${toString cfg.rfGain} --if ${toString cfg.ifGain} --bb ${toString cfg.bbGain} --device-string ${cfg.deviceString} --offsets ${
+        exec ${pkgs.tetra-receiver}/bin/tetra-receiver --rf ${toString cfg.rfGain} --if ${toString cfg.ifGain} --bb ${toString cfg.bbGain} --device-string "${cfg.deviceString}" --offsets ${
           lib.concatMapStringsSep "," toString cfg.offsets
-        } --samp-rate ${toString cfg.sampRate} --udp-start ${toString cfg.udpStart} &
+        } --center-frequency ${toString cfg.centerFrequency} --samp-rate ${toString cfg.sampRate} --udp-start ${toString cfg.udpStart} &
       '';
 
       serviceConfig = {
@@ -85,13 +85,20 @@ in {
       };
     };
 
+    security.wrappers.tetra-receiver = {
+      owner = cfg.user;
+      group = "users";
+      capabilities = "cap_sys_nice+eip";
+      source = "${pkgs.tetra-receiver}/bin/tetra-receiver";
+    };
+
     # user accounts for systemd units
     users.users."${cfg.user}" = {
-      name = "${cfg.user}";
+      name = cfg.user;
       description = "This users runs tetra-receiver";
-      isNormalUser = false;
-      isSystemUser = true;
+      isNormalUser = true;
       group = cfg.group;
+      extraGroups = [ "plugdev" ];
     };
   };
 }
