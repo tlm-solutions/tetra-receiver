@@ -1,9 +1,9 @@
 cmake_minimum_required(VERSION 3.22)
 
-add_executable(gnuradio-decoder-cpp
+add_executable(tetra-receiver
                src/main.cpp)
 
-target_compile_options(gnuradio-decoder-cpp PUBLIC -std=c++11 -Wall)
+target_compile_options(tetra-receiver PUBLIC -std=c++11 -Wall)
 
 include_directories(src)
 
@@ -15,6 +15,6 @@ find_package(cxxopts REQUIRED)
 
 include_directories(${GNURADIO_ALL_INCLUDE_DIRS})
 
-target_link_libraries(gnuradio-decoder-cpp log4cpp gnuradio-digital gnuradio-analog gnuradio-filter gnuradio-blocks gnuradio-fft gnuradio-runtime gnuradio-pmt volk gnuradio-osmosdr)
+target_link_libraries(tetra-receiver log4cpp gnuradio-digital gnuradio-analog gnuradio-filter gnuradio-blocks gnuradio-fft gnuradio-runtime gnuradio-pmt volk gnuradio-osmosdr)
 
-install(TARGETS gnuradio-decoder-cpp DESTINATION bin)
+install(TARGETS tetra-receiver DESTINATION bin)
