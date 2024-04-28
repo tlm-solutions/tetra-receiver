@@ -81,12 +81,14 @@ in {
 
     security.wrappers.tetra-receiver = {
       owner = cfg.user;
-      group = "users";
+      group = cfg.group;
       capabilities = "cap_sys_nice+eip";
       source = "${pkgs.tetra-receiver}/bin/tetra-receiver";
     };
 
     # user accounts for systemd units
+    users.groups."${cfg.group}" = {};
+
     users.users."${cfg.user}" = {
       name = cfg.user;
       description = "This users runs tetra-receiver";
