@@ -2,13 +2,7 @@
 let cfg = config.services.tetra-receiver;
 in {
   options.services.tetra-receiver = with lib; {
-    enable = mkOption {
-      type = types.bool;
-      default = false;
-      description = ''
-        Whether to enable tetra-receiver service
-      '';
-    };
+    enable = mkEnableOption "tetra-receiver";
     rfGain = mkOption {
       type = types.int;
       default = 10;
