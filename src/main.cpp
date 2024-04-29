@@ -98,7 +98,7 @@ int main(int argc, char **argv) {
   for (; it != offsets.end(); ++it) {
     auto offset = *it;
     auto udp_port = udp_start + std::distance(offsets.begin(), it);
-    auto decimation = 32.0f;
+    auto decimation = samp_rate / 1000000.0f * 40.0f;
     auto channel_rate = 36000;
     auto sps = 2;
     auto nfilts = 32;
