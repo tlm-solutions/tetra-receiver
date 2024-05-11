@@ -17,4 +17,8 @@ include_directories(${GNURADIO_ALL_INCLUDE_DIRS})
 
 target_link_libraries(tetra-receiver log4cpp gnuradio-digital gnuradio-analog gnuradio-filter gnuradio-blocks gnuradio-fft gnuradio-runtime gnuradio-pmt volk gnuradio-osmosdr)
 
+enable_testing()
+
+add_subdirectory(test)
+
 install(TARGETS tetra-receiver DESTINATION bin)
