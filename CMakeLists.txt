@@ -1,11 +1,25 @@
 cmake_minimum_required(VERSION 3.22)
+project(tetra-receiver)
 
+SET(CMAKE_CXX_STANDARD 17)
+
+enable_testing()
+
+#
+# Configure the tetra-receiver library
+#
+add_library(lib-tetra-receiver
+        src/config.cpp
+)
+target_include_directories(lib-tetra-receiver PUBLIC include)
+
+#
+# Build the tool
+#
 add_executable(tetra-receiver
-               src/main.cpp)
-
-target_compile_options(tetra-receiver PUBLIC -std=c++11 -Wall)
-
-include_directories(src)
+        src/tetra-receiver.cpp
+)
+target_compile_options(tetra-receiver PUBLIC -std=c++17 -Wall)
 
 find_package(Gnuradio "3.8" REQUIRED)
 find_package(Boost REQUIRED)
@@ -15,6 +29,11 @@ find_package(cxxopts REQUIRED)
 
 include_directories(${GNURADIO_ALL_INCLUDE_DIRS})
 
-target_link_libraries(tetra-receiver log4cpp gnuradio-digital gnuradio-analog gnuradio-filter gnuradio-blocks gnuradio-fft gnuradio-runtime gnuradio-pmt volk gnuradio-osmosdr)
+target_link_libraries(tetra-receiver lib-tetra-receiver log4cpp volk gnuradio-osmosdr gnuradio-digital gnuradio-analog gnuradio-filter gnuradio-blocks gnuradio-fft gnuradio-runtime gnuradio-pmt)
 
 install(TARGETS tetra-receiver DESTINATION bin)
+
+#
+# Testing
+#
+add_subdirectory(test)

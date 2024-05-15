@@ -10,3 +10,4 @@ jobs:
       - uses: actions/checkout@v3
       - uses: cachix/install-nix-action@v17
       - run: nix build -vL .\#packages.x86_64-linux.tetra-receiver
+      - run: ./result/bin/unit_tests
