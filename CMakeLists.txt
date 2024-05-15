@@ -3,24 +3,9 @@ project(tetra-receiver)
 
 SET(CMAKE_CXX_STANDARD 17)
 
-enable_testing()
-
 #
-# Configure the tetra-receiver library
+# Find required libraries
 #
-add_library(lib-tetra-receiver
-        src/config.cpp
-)
-target_include_directories(lib-tetra-receiver PUBLIC include)
-
-#
-# Build the tool
-#
-add_executable(tetra-receiver
-        src/tetra-receiver.cpp
-)
-target_compile_options(tetra-receiver PUBLIC -std=c++17 -Wall)
-
 find_package(Gnuradio "3.8" REQUIRED)
 find_package(Boost REQUIRED)
 find_package(Volk REQUIRED)
@@ -29,11 +14,37 @@ find_package(cxxopts REQUIRED)
 
 include_directories(${GNURADIO_ALL_INCLUDE_DIRS})
 
-target_link_libraries(tetra-receiver lib-tetra-receiver log4cpp volk gnuradio-osmosdr gnuradio-digital gnuradio-analog gnuradio-filter gnuradio-blocks gnuradio-fft gnuradio-runtime gnuradio-pmt)
+#
+# Turn ON Testing
+#
+enable_testing()
 
-install(TARGETS tetra-receiver DESTINATION bin)
+#
+# Configure the tetra-receiver library
+#
+add_library(lib-tetra-receiver
+        src/config.cpp
+)
+
+target_include_directories(lib-tetra-receiver PUBLIC include)
+
+#
+# Build the tool
+#
+add_executable(tetra-receiver
+        src/tetra-receiver.cpp
+)
+
+target_compile_options(tetra-receiver PUBLIC -std=c++17 -Wall)
+
+target_link_libraries(tetra-receiver lib-tetra-receiver log4cpp volk gnuradio-osmosdr gnuradio-digital gnuradio-analog gnuradio-filter gnuradio-blocks gnuradio-fft gnuradio-runtime gnuradio-pmt)
 
 #
 # Testing
 #
 add_subdirectory(test)
+
+#
+# Install tetra-receiver in bin folder
+#
+install(TARGETS tetra-receiver DESTINATION bin)

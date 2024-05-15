@@ -54,7 +54,7 @@ clangStdenv.mkDerivation {
 
 	installPhase = ''
 		mkdir -p $out/bin
-    cp ./test/unit_tests $out/bin/
-    cp ./tetra-receiver $out/bin/
+    cp ./test/unit_tests $out/bin/test
+    cp ./tetra-receiver $out/bin/tetra-receiver
 	'';
 }
