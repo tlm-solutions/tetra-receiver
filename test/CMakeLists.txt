@@ -8,18 +8,12 @@ set(BUILD_GMOCK OFF CACHE BOOL "" FORCE)
 
 add_executable(
     unit_tests
+		config_test.cpp
 		main.cpp
-		mockup_test.cpp
 )
 
-target_include_directories(unit_tests PUBLIC ${GTEST_INCLUDE_DIR})
+#target_include_directories(unit_tests PUBLIC ${GTEST_INCLUDE_DIR})
 target_link_libraries(unit_tests PUBLIC ${GTEST_LIBRARIES})
+target_link_libraries(unit_tests PRIVATE lib-tetra-receiver)
 
-# automatic discovery of unit tests
-include(GoogleTest)
-gtest_discover_tests(unit_tests
-  PROPERTIES
-    LABELS "unit"
-  DISCOVERY_TIMEOUT  # how long to wait (in seconds) before crashing
-    240
-  )
+install(TARGETS unit_tests DESTINATION bin)
