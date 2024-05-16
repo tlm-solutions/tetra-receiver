@@ -11,9 +11,6 @@
 #include <toml.hpp>
 #include <variant>
 
-#ifndef INCLUDE_CONFIG_H
-#define INCLUDE_CONFIG_H
-
 namespace config {
 
 /// The sample rate of the TETRA Stream
@@ -141,16 +138,21 @@ public:
   const unsigned int if_gain_;
   /// The BB gain setting of the SDR
   const unsigned int bb_gain_;
+  /// The Host addrress of the prometheus Server
+  const std::string prometheus_host_;
+  /// The Port of the prometheus Server
+  const unsigned short prometheus_port_;
   /// The vector of Streams which should be directly decoded from the input of
   /// the SDR.
   const std::vector<Stream> streams_{};
   /// The vector of decimators which should first Decimate a signal of the SDR
   /// and then sent it to the vector of streams inside them.
   const std::vector<Decimate> decimators_{};
+  TopLevel() = default;
 
   TopLevel(const SpectrumSlice<unsigned int>& spectrum, std::string device_string, unsigned int rf_gain,
-           unsigned int if_gain, unsigned int bb_gain, const std::vector<Stream>& streams,
-           const std::vector<Decimate>& decimators);
+           unsigned int if_gain, unsigned int bb_gain, std::string prometheus_host, unsigned short prometheus_port_,
+           const std::vector<Stream>& streams, const std::vector<Decimate>& decimators);
 };
 
 using decimate_or_stream = std::variant<Decimate, Stream>;
@@ -188,6 +190,8 @@ template <> struct from<config::TopLevel> {
     const unsigned int rf_gain = find_or(v, "RFGain", 0);
     const unsigned int if_gain = find_or(v, "IFGain", 0);
     const unsigned int bb_gain = find_or(v, "BBGain", 0);
+    const std::string prometheus_host = find_or<std::string>(v, "PrometheusHost", "127.0.0.1");
+    const unsigned short prometheus_port = find_or(v, "PrometheusPort", 26100);
 
     config::SpectrumSlice<unsigned int> sdr_spectrum(center_frequency, sample_rate);
 
@@ -241,12 +245,10 @@ template <> struct from<config::TopLevel> {
       throw std::invalid_argument("Did not handle a derived type of decimate_or_stream");
     }
 
-    return config::TopLevel(sdr_spectrum, device_string, rf_gain, if_gain, bb_gain, streams, decimators);
+    return config::TopLevel(sdr_spectrum, device_string, rf_gain, if_gain, bb_gain, prometheus_host, prometheus_port, streams, decimators);
   }
 };
 
 }; // namespace toml
-
-#endif
 
 #endif

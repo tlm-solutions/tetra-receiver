@@ -27,6 +27,7 @@
 #include <osmosdr/source.h>
 
 #include "config.h"
+#include "prometheus.h"
 
 static auto print_gnuradio_diagnostics() -> void {
   const auto ver = gr::version();
@@ -155,7 +156,8 @@ auto main(int argc, char** argv) -> int {
       ("center-frequency", "Center frequency of the SDR", cxxopts::value<unsigned int>()->default_value("0"))
       ("offsets", "offsets of the TETRA streams", cxxopts::value<std::vector<int>>())
       ("samp-rate", "Sample rate of the sdr", cxxopts::value<unsigned int>()->default_value("1000000"))
-      ("udp-start", "Start UDP port. Each stream gets its own UDP port, starting at udp-start", cxxopts::value<unsigned int>()->default_value("42000"))
+      ("udp-start", "Start UDP port. Each stream gets its own UDP port, starting at udp-start", cxxopts::value<unsigned int>()->default_value("27000"))
+      ("prometheus-host", "Address of prometheus server for exporting metrics.", cxxopts::value<std::string>()->default_value("127.0.0.1:26100"))
       ;
     // clang-format on
 
@@ -167,13 +169,16 @@ auto main(int argc, char** argv) -> int {
     }
 
     gr::top_block_sptr tb = 0;
+    std::shared_ptr<PrometheusExporter> exporter = nullptr;
 
     // Read from config file instead
     if (result.count("config-file")) {
       auto data = toml::parse(result["config-file"].as<std::string>());
-
       auto top = toml::get<config::TopLevel>(data);
+
       tb = GnuradioTopBlock::from_config(top);
+      std::string prometheus_addr = top.prometheus_host_ + ":" + std::to_string(top.prometheus_port_);
+      exporter = std::make_shared<PrometheusExporter>(prometheus_addr);
     } else {
       const auto sample_rate = result["samp-rate"].as<unsigned int>();
       const auto& device_string = result["device-string"].as<std::string>();
@@ -183,6 +188,8 @@ auto main(int argc, char** argv) -> int {
       const auto bb_gain = result["bb"].as<unsigned int>();
       const auto& offsets = result["offsets"].as<std::vector<int>>();
       const auto udp_start = result["udp-start"].as<unsigned int>();
+      const auto prometheus_host = result["prometheus-host"].as<std::string>();
+      const auto prometheus_port = result["prometheus-port"].as<unsigned short>();
 
       std::vector<config::Stream> streams;
       const auto input_spectrum = config::SpectrumSlice(center_frequency, sample_rate);
@@ -197,16 +204,31 @@ auto main(int argc, char** argv) -> int {
         streams.emplace_back(config::Stream(input_spectrum, tetra_spectrum, config::kDefaultHost, udp_port));
       }
 
-      auto top = config::TopLevel(input_spectrum, device_string, rf_gain, if_gain, bb_gain, /*streams=*/streams,
-                                  /*decimators=*/{});
+      config::TopLevel top(
+          input_spectrum, 
+          device_string, 
+          rf_gain, 
+          if_gain, 
+          bb_gain, 
+          prometheus_host, 
+          prometheus_port, 
+          /*streams=*/streams,
+          /*decimators=*/{}
+        );
+
       tb = GnuradioTopBlock::from_config(top);
+      std::string prometheus_addr = top.prometheus_host_ + ":" + std::to_string(top.prometheus_port_);
+      exporter = std::make_shared<PrometheusExporter>(prometheus_addr);
     }
+    auto& signal_strength = exporter->signal_strength();
+
+    signal_strength.Add({{"signal_strength", 0}}).SetToCurrentTime();
+    signal_strength.Add({{"signal_strength", 0}}).Set(25.123);
 
     // print the gnuradio debugging information
     print_gnuradio_diagnostics();
 
     tb->start();
-
     tb->wait();
   } catch (std::exception& e) {
     std::cerr << e.what() << std::endl;

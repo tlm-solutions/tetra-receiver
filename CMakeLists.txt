@@ -9,8 +9,9 @@ SET(CMAKE_CXX_STANDARD 17)
 find_package(Gnuradio "3.8" REQUIRED)
 find_package(Boost REQUIRED)
 find_package(Volk REQUIRED)
-find_package(gnuradio-osmosdr REQUIRED)
 find_package(cxxopts REQUIRED)
+find_package(prometheus-cpp CONFIG REQUIRED)
+find_package(gnuradio-osmosdr REQUIRED)
 
 include_directories(${GNURADIO_ALL_INCLUDE_DIRS})
 
@@ -32,12 +33,26 @@ target_include_directories(lib-tetra-receiver PUBLIC include)
 # Build the tool
 #
 add_executable(tetra-receiver
+        src/prometheus.cpp
         src/tetra-receiver.cpp
 )
 
 target_compile_options(tetra-receiver PUBLIC -std=c++17 -Wall)
 
-target_link_libraries(tetra-receiver lib-tetra-receiver log4cpp volk gnuradio-osmosdr gnuradio-digital gnuradio-analog gnuradio-filter gnuradio-blocks gnuradio-fft gnuradio-runtime gnuradio-pmt)
+target_link_libraries(tetra-receiver 
+  lib-tetra-receiver 
+  log4cpp 
+  volk 
+  gnuradio-osmosdr 
+  gnuradio-digital 
+  gnuradio-analog 
+  gnuradio-filter 
+  gnuradio-blocks 
+  gnuradio-fft 
+  gnuradio-runtime 
+  gnuradio-pmt
+  prometheus-cpp::pull
+)
 
 #
 # Testing

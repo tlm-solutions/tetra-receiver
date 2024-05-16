@@ -11,6 +11,10 @@
 , fetchFromGitHub
 , stdenv
 , gtest
+, prometheus-cpp
+, zlib
+, curlFull
+, glibc
 }:
 let
   toml11 = stdenv.mkDerivation {
@@ -41,14 +45,28 @@ let
     outputs = [ "out" ];
   });
 in
-clangStdenv.mkDerivation {
+stdenv.mkDerivation {
   name = "tetra-receiver";
   version = "0.1.0";
 
   src = ./..;
 
   nativeBuildInputs = [ cmake pkg-config ];
-  buildInputs = [ log4cpp mpir gnuradio.unwrapped gnuradio.unwrapped.boost.dev gmpxx.dev gnuradio.unwrapped.volk osmosdr cxxopts toml11 gtest ];
+  buildInputs = [
+    log4cpp
+    mpir
+    gnuradio.unwrapped
+    gnuradio.unwrapped.boost.dev
+    gmpxx.dev
+    gnuradio.unwrapped.volk
+    osmosdr
+    cxxopts
+    toml11
+    gtest
+    prometheus-cpp
+    zlib
+    curlFull
+  ];
 
   cmakeFlags = [ "-DCMAKE_PREFIX_PATH=${osmosdr}/lib/cmake/osmosdr" ];
 

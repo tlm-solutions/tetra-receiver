@@ -48,13 +48,15 @@ Decimate::Decimate(const SpectrumSlice<unsigned int>& input_spectrum, const Spec
 }
 
 TopLevel::TopLevel(const SpectrumSlice<unsigned int>& spectrum, std::string device_string, const unsigned int rf_gain,
-                   const unsigned int if_gain, const unsigned int bb_gain, const std::vector<Stream>& streams,
-                   const std::vector<Decimate>& decimators)
+                   const unsigned int if_gain, const unsigned int bb_gain, std::string prometheus_host, unsigned short prometheus_port,
+                   const std::vector<Stream>& streams, const std::vector<Decimate>& decimators)
     : spectrum_(spectrum)
     , device_string_(std::move(device_string))
     , rf_gain_(rf_gain)
     , if_gain_(if_gain)
     , bb_gain_(bb_gain)
+    , prometheus_host_(std::move(prometheus_host))
+    , prometheus_port_(prometheus_port)
     , streams_(streams)
     , decimators_(decimators) {
   for (const auto& stream : streams) {
