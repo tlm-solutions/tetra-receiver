@@ -245,7 +245,8 @@ template <> struct from<config::TopLevel> {
       throw std::invalid_argument("Did not handle a derived type of decimate_or_stream");
     }
 
-    return config::TopLevel(sdr_spectrum, device_string, rf_gain, if_gain, bb_gain, prometheus_host, prometheus_port, streams, decimators);
+    return config::TopLevel(sdr_spectrum, device_string, rf_gain, if_gain, bb_gain, prometheus_host, prometheus_port,
+                            streams, decimators);
   }
 };
 

@@ -204,17 +204,9 @@ auto main(int argc, char** argv) -> int {
         streams.emplace_back(config::Stream(input_spectrum, tetra_spectrum, config::kDefaultHost, udp_port));
       }
 
-      config::TopLevel top(
-          input_spectrum, 
-          device_string, 
-          rf_gain, 
-          if_gain, 
-          bb_gain, 
-          prometheus_host, 
-          prometheus_port, 
-          /*streams=*/streams,
-          /*decimators=*/{}
-        );
+      config::TopLevel top(input_spectrum, device_string, rf_gain, if_gain, bb_gain, prometheus_host, prometheus_port,
+                           /*streams=*/streams,
+                           /*decimators=*/{});
 
       tb = GnuradioTopBlock::from_config(top);
       std::string prometheus_addr = top.prometheus_host_ + ":" + std::to_string(top.prometheus_port_);
