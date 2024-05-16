@@ -1,11 +1,11 @@
 #ifndef FUNNEL_PROMETHEUS_HPP
 #define FUNNEL_PROMETHEUS_HPP
 
+#include <memory>
+
 #include <prometheus/counter.h>
 #include <prometheus/exposer.h>
 #include <prometheus/registry.h>
-
-#include <memory>
 
 class PrometheusExporter {
 private:
