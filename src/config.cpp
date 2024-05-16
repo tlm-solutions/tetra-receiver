@@ -3,7 +3,7 @@
 namespace config {
 
 Stream::Stream(const SpectrumSlice<unsigned int>& input_spectrum, const SpectrumSlice<unsigned int>& spectrum,
-               std::string host, unsigned int port)
+               std::string host, uint16_t port)
     : input_spectrum_(input_spectrum)
     , spectrum_(spectrum)
     , host_(std::move(host))
@@ -49,7 +49,7 @@ Decimate::Decimate(const SpectrumSlice<unsigned int>& input_spectrum, const Spec
 
 TopLevel::TopLevel(const SpectrumSlice<unsigned int>& spectrum, std::string device_string, const unsigned int rf_gain,
                    const unsigned int if_gain, const unsigned int bb_gain, std::string prometheus_host,
-                   unsigned short prometheus_port, const std::vector<Stream>& streams,
+                   uint16_t prometheus_port, const std::vector<Stream>& streams,
                    const std::vector<Decimate>& decimators)
     : spectrum_(spectrum)
     , device_string_(std::move(device_string))

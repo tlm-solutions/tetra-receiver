@@ -4,6 +4,7 @@
 #include <map>
 #include <string>
 #include <string_view>
+#include <cstdint>
 #include <utility>
 #include <vector>
 #include <optional>
@@ -18,7 +19,7 @@ namespace config {
 
 /// The default host where to send the TETRA data. Gnuradio breaks if this is a host and not an IP
 [[maybe_unused]] const std::string kDefaultHost = "127.0.0.1";
-[[maybe_unused]] constexpr unsigned int kDefaultPort = 42000;
+[[maybe_unused]] constexpr uint16_t kDefaultPort = 42000;
 
 template <typename T> class Range {
 private:
@@ -91,7 +92,7 @@ public:
   /// Optional field
   /// The port to which the samples of the Stream should be sent. This defaults
   /// to 42000.
-  const unsigned int port_ = 0;
+  const uint16_t port_ = 0;
 
   /// Describe the on which frequency a TETRA Stream should be extracted and
   /// where data should be sent to.
@@ -100,7 +101,7 @@ public:
   /// \param host the to send the data to
   /// \param port the port to send the data to
   Stream(const SpectrumSlice<unsigned int>& input_spectrum, const SpectrumSlice<unsigned int>& spectrum,
-         std::string host, unsigned int port);
+         std::string host, uint16_t port);
 };
 
 class Decimate {
@@ -141,17 +142,18 @@ public:
   /// The Host addrress of the prometheus Server
   const std::string prometheus_host_;
   /// The Port of the prometheus Server
-  const unsigned short prometheus_port_;
+  const uint16_t prometheus_port_;
   /// The vector of Streams which should be directly decoded from the input of
   /// the SDR.
   const std::vector<Stream> streams_{};
   /// The vector of decimators which should first Decimate a signal of the SDR
   /// and then sent it to the vector of streams inside them.
   const std::vector<Decimate> decimators_{};
+
   TopLevel() = default;
 
   TopLevel(const SpectrumSlice<unsigned int>& spectrum, std::string device_string, unsigned int rf_gain,
-           unsigned int if_gain, unsigned int bb_gain, std::string prometheus_host, unsigned short prometheus_port_,
+           unsigned int if_gain, unsigned int bb_gain, std::string prometheus_host, uint16_t prometheus_port_,
            const std::vector<Stream>& streams, const std::vector<Decimate>& decimators);
 };
 
@@ -170,7 +172,7 @@ static config::decimate_or_stream get_decimate_or_stream(const config::SpectrumS
     sample_rate = find<unsigned int>(v, "SampleRate");
 
   const std::string host = find_or(v, "Host", config::kDefaultHost);
-  const unsigned int port = find_or(v, "Port", config::kDefaultPort);
+  const uint16_t port = find_or(v, "Port", config::kDefaultPort);
 
   // If we have a sample rate specified this is a Decimate, otherwhise this is
   // a Stream.
@@ -191,7 +193,7 @@ template <> struct from<config::TopLevel> {
     const unsigned int if_gain = find_or(v, "IFGain", 0);
     const unsigned int bb_gain = find_or(v, "BBGain", 0);
     const std::string prometheus_host = find_or<std::string>(v, "PrometheusHost", "127.0.0.1");
-    const unsigned short prometheus_port = find_or(v, "PrometheusPort", 26100);
+    const uint16_t prometheus_port = find_or(v, "PrometheusPort", 26100);
 
     config::SpectrumSlice<unsigned int> sdr_spectrum(center_frequency, sample_rate);
 
