@@ -117,7 +117,7 @@ TEST(config, TopLevel_prometheus_set) {
 		CenterFrequency = 4000000
 		DeviceString = "device_string_abc"
 		SampleRate = 60000
-		
+	
 		[Prometheus]
 		Host = "127.0.0.2"
 		Port = 4200
@@ -132,8 +132,6 @@ TEST(config, TopLevel_prometheus_set) {
   EXPECT_EQ(t.prometheus_->port_, 4200);
 }
 
-TEST(config, TopLevel_valid_parser) {
-  const toml::value config_object = u8R"(
 TEST(config, TopLevel_valid_parser) {
   const toml::value config_object = u8R"(
 		CenterFrequency = 4000000

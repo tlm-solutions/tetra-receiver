@@ -209,8 +209,8 @@ static config::decimate_or_stream get_decimate_or_stream(const config::SpectrumS
 
 template <> struct from<std::unique_ptr<config::Prometheus>> {
   static auto from_toml(const value& v) -> std::unique_ptr<config::Prometheus> {
-    const std::string prometheus_host = find_or(v, "PrometheusHost", config::kDefaultPrometheusHost);
-    const uint16_t prometheus_port = find_or(v, "PrometheusPort", config::kDefaultPrometheusPort);
+    const std::string prometheus_host = find_or(v, "Host", config::kDefaultPrometheusHost);
+    const uint16_t prometheus_port = find_or(v, "Port", config::kDefaultPrometheusPort);
 
     return std::make_unique<config::Prometheus>(prometheus_host, prometheus_port);
   }
