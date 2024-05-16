@@ -40,6 +40,8 @@ Therefore this application supports multiple stages of decimation.
 The config has mandatory global arguments `CenterFrequency`, `DeviceString` and `SampleRate` for the SDR.
 The optional argumens `RFGain`, `IFGain` and `BBGain` are for setting the gains of the SDR, by default these are zero.
 
+Specify an optional table with the name `Prometheus` and the values `Host` and `Port` to send metrics about the currently received signal strength to a prometheus server.
+
 If a table specifies `Frequency`, `Host` and `Port`, the signal is directly decoded from the SDR.
 If it is specified in a subtable, it is decoded from the decimated signal described by the associtated table.
 
@@ -52,6 +54,10 @@ SampleRate = unsigned int
 RFGain = unsigned int (default 0)
 IFGain = unsigned int (default 0)
 BBGain = unsigned int (default 0)
+
+[Prometheus]
+Host = "string" (default 127.0.0.1)
+Port = "unsigned int" (default 9010)
 
 [DecimateA]
 Frequency = unsigned int

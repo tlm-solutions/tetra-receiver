@@ -3,6 +3,7 @@
 
 #include <cstdint>
 #include <map>
+#include <memory>
 #include <optional>
 #include <string>
 #include <string_view>
@@ -31,6 +32,8 @@ private:
   T max_ = 0;
 
 public:
+  Range() = delete;
+
   /// A class takes two values of type T and stores the minimum value in min_,
   /// the maximum in max_ respectively.
   Range(const T lhs, const T rhs) noexcept {
@@ -60,6 +63,8 @@ public:
   Range<T> frequency_range_;
   /// the sampling frequency for this slice of EM spectrum
   T sample_rate_;
+
+  SpectrumSlice() = delete;
 
   /// Get different properties for a slice of EM spectrum
   /// \param frequency the center frequency of the slice
@@ -93,6 +98,8 @@ public:
   /// to 42000.
   const uint16_t port_ = 0;
 
+  Stream() = delete;
+
   /// Describe the on which frequency a TETRA Stream should be extracted and
   /// where data should be sent to.
   /// \param input_spectrum the slice of spectrum that is input to this block
@@ -117,6 +124,8 @@ public:
   /// connected to.
   std::vector<Stream> streams_;
 
+  Decimate() = delete;
+
   /// Describe the decimation of the SDR Stream by the frequency where we want
   /// to extract a signal with a width of sample_rate
   /// \param input_spectrum the slice of spectrum that is input to this block
@@ -124,6 +133,23 @@ public:
   /// \param streams the vector of streams the decimated signal should be sent
   /// to
   Decimate(const SpectrumSlice<unsigned int>& input_spectrum, const SpectrumSlice<unsigned int>& spectrum);
+};
+
+class Prometheus {
+public:
+  /// the host to which prometheus is sending data to
+  const std::string host_;
+  /// the port to which prometheus is sending data to
+  const uint16_t port_;
+
+  Prometheus() = delete;
+
+  /// The prometheus exporter to we want to send the metrics
+  /// \param host the host to which prometheus is sending data
+  /// \param port the port to which prometheus is sending data
+  Prometheus(std::string host, const uint16_t port)
+      : host_(std::move(host))
+      , port_(port){};
 };
 
 class TopLevel {
@@ -138,22 +164,20 @@ public:
   const unsigned int if_gain_;
   /// The BB gain setting of the SDR
   const unsigned int bb_gain_;
-  /// The Host addrress of the prometheus Server
-  const std::string prometheus_host_;
-  /// The Port of the prometheus Server
-  const uint16_t prometheus_port_;
   /// The vector of Streams which should be directly decoded from the input of
   /// the SDR.
   const std::vector<Stream> streams_{};
   /// The vector of decimators which should first Decimate a signal of the SDR
   /// and then sent it to the vector of streams inside them.
   const std::vector<Decimate> decimators_{};
+  /// Optional config element for the prometheus exporter
+  const std::unique_ptr<Prometheus> prometheus_;
 
-  TopLevel() = default;
+  TopLevel() = delete;
 
   TopLevel(const SpectrumSlice<unsigned int>& spectrum, std::string device_string, unsigned int rf_gain,
-           unsigned int if_gain, unsigned int bb_gain, std::string prometheus_host, uint16_t prometheus_port_,
-           const std::vector<Stream>& streams, const std::vector<Decimate>& decimators);
+           unsigned int if_gain, unsigned int bb_gain, const std::vector<Stream>& streams,
+           const std::vector<Decimate>& decimators, std::unique_ptr<Prometheus>&& prometheus);
 };
 
 using decimate_or_stream = std::variant<Decimate, Stream>;
@@ -183,6 +207,15 @@ static config::decimate_or_stream get_decimate_or_stream(const config::SpectrumS
   }
 }
 
+template <> struct from<std::unique_ptr<config::Prometheus>> {
+  static auto from_toml(const value& v) -> std::unique_ptr<config::Prometheus> {
+    const std::string prometheus_host = find_or(v, "PrometheusHost", config::kDefaultPrometheusHost);
+    const uint16_t prometheus_port = find_or(v, "PrometheusPort", config::kDefaultPrometheusPort);
+
+    return std::make_unique<config::Prometheus>(prometheus_host, prometheus_port);
+  }
+};
+
 template <> struct from<config::TopLevel> {
   static auto from_toml(const value& v) -> config::TopLevel {
     const unsigned int center_frequency = find<unsigned int>(v, "CenterFrequency");
@@ -191,21 +224,27 @@ template <> struct from<config::TopLevel> {
     const unsigned int rf_gain = find_or(v, "RFGain", 0);
     const unsigned int if_gain = find_or(v, "IFGain", 0);
     const unsigned int bb_gain = find_or(v, "BBGain", 0);
-    const std::string prometheus_host = find_or<std::string>(v, "PrometheusHost", config::kDefaultPrometheusHost);
-    const uint16_t prometheus_port = find_or(v, "PrometheusPort", config::kDefaultPrometheusPort);
 
     config::SpectrumSlice<unsigned int> sdr_spectrum(center_frequency, sample_rate);
 
     std::vector<config::Stream> streams;
     std::vector<config::Decimate> decimators;
+    std::unique_ptr<config::Prometheus> prometheus;
 
     // Iterate over all elements in the root table
     for (const auto& root_kv : v.as_table()) {
+      const auto& name = root_kv.first;
       const auto& table = root_kv.second;
 
       // Find table entries. These can be decimators or streams.
       if (!table.is_table())
         continue;
+
+      // If the table is labled "Prometheus" extract the prometheus arguments
+      if (name == "Prometheus") {
+        prometheus = get<std::unique_ptr<config::Prometheus>>(table);
+        continue;
+      }
 
       const auto element = get_decimate_or_stream(sdr_spectrum, table);
 
@@ -246,8 +285,8 @@ template <> struct from<config::TopLevel> {
       throw std::invalid_argument("Did not handle a derived type of decimate_or_stream");
     }
 
-    return config::TopLevel(sdr_spectrum, device_string, rf_gain, if_gain, bb_gain, prometheus_host, prometheus_port,
-                            streams, decimators);
+    return config::TopLevel(sdr_spectrum, device_string, rf_gain, if_gain, bb_gain, streams, decimators,
+                            std::move(prometheus));
   }
 };
 

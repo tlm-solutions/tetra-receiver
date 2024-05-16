@@ -94,6 +94,46 @@ TEST(config, TopLevel_decimate_under_decimate) {
   EXPECT_THROW(toml::get<config::TopLevel>(config_object), std::invalid_argument);
 }
 
+TEST(config, TopLevel_prometheus_default) {
+  const toml::value config_object = u8R"(
+		CenterFrequency = 4000000
+		DeviceString = "device_string_abc"
+		SampleRate = 60000
+		
+		[Prometheus]
+	)"_toml;
+
+  const config::TopLevel t = toml::get<config::TopLevel>(config_object);
+
+  // prometheus is set
+  EXPECT_TRUE(t.prometheus_);
+
+  EXPECT_EQ(t.prometheus_->host_, config::kDefaultPrometheusHost);
+  EXPECT_EQ(t.prometheus_->port_, config::kDefaultPrometheusPort);
+}
+
+TEST(config, TopLevel_prometheus_set) {
+  const toml::value config_object = u8R"(
+		CenterFrequency = 4000000
+		DeviceString = "device_string_abc"
+		SampleRate = 60000
+		
+		[Prometheus]
+		Host = "127.0.0.2"
+		Port = 4200
+	)"_toml;
+
+  const config::TopLevel t = toml::get<config::TopLevel>(config_object);
+
+  // prometheus is set
+  EXPECT_TRUE(t.prometheus_);
+
+  EXPECT_EQ(t.prometheus_->host_, "127.0.0.2");
+  EXPECT_EQ(t.prometheus_->port_, 4200);
+}
+
+TEST(config, TopLevel_valid_parser) {
+  const toml::value config_object = u8R"(
 TEST(config, TopLevel_valid_parser) {
   const toml::value config_object = u8R"(
 		CenterFrequency = 4000000
@@ -127,6 +167,9 @@ TEST(config, TopLevel_valid_parser) {
   EXPECT_EQ(t.rf_gain_, 0);
   EXPECT_EQ(t.if_gain_, 14);
   EXPECT_EQ(t.bb_gain_, 0);
+
+  // prometheus is not set
+  EXPECT_FALSE(t.prometheus_);
 
   EXPECT_EQ(t.decimators_.size(), 1);
   const auto& decimate_a = t.decimators_[0];

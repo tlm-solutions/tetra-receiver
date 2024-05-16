@@ -48,18 +48,16 @@ Decimate::Decimate(const SpectrumSlice<unsigned int>& input_spectrum, const Spec
 }
 
 TopLevel::TopLevel(const SpectrumSlice<unsigned int>& spectrum, std::string device_string, const unsigned int rf_gain,
-                   const unsigned int if_gain, const unsigned int bb_gain, std::string prometheus_host,
-                   uint16_t prometheus_port, const std::vector<Stream>& streams,
-                   const std::vector<Decimate>& decimators)
+                   const unsigned int if_gain, const unsigned int bb_gain, const std::vector<Stream>& streams,
+                   const std::vector<Decimate>& decimators, std::unique_ptr<Prometheus>&& prometheus)
     : spectrum_(spectrum)
     , device_string_(std::move(device_string))
     , rf_gain_(rf_gain)
     , if_gain_(if_gain)
     , bb_gain_(bb_gain)
-    , prometheus_host_(std::move(prometheus_host))
-    , prometheus_port_(prometheus_port)
     , streams_(streams)
-    , decimators_(decimators) {
+    , decimators_(decimators)
+    , prometheus_(std::move(prometheus)) {
   for (const auto& stream : streams) {
     if (stream.input_spectrum_ != spectrum) {
       throw std::invalid_argument("The output of Decimate does not match to the input of Stream.");
