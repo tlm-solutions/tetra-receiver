@@ -221,6 +221,7 @@ auto main(int argc, char** argv) -> int {
     print_gnuradio_diagnostics();
 
     tb->start();
+
     tb->wait();
   } catch (std::exception& e) {
     std::cerr << e.what() << std::endl;

@@ -1,5 +1,4 @@
-{ clangStdenv
-, pkg-config
+{ pkg-config
 , cmake
 , gnuradio
 , gnuradioPackages

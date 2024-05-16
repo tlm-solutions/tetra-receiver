@@ -1,6 +1,4 @@
-
 #include "prometheus.h"
-#include <iostream>
 
 PrometheusExporter::PrometheusExporter(const std::string& prometheus_host) noexcept {
   exposer_ = std::make_unique<prometheus::Exposer>(prometheus_host);

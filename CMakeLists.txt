@@ -9,9 +9,9 @@ SET(CMAKE_CXX_STANDARD 17)
 find_package(Gnuradio "3.8" REQUIRED)
 find_package(Boost REQUIRED)
 find_package(Volk REQUIRED)
+find_package(gnuradio-osmosdr REQUIRED)
 find_package(cxxopts REQUIRED)
 find_package(prometheus-cpp CONFIG REQUIRED)
-find_package(gnuradio-osmosdr REQUIRED)
 
 include_directories(${GNURADIO_ALL_INCLUDE_DIRS})
 
