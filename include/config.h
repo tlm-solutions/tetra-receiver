@@ -1,14 +1,14 @@
 #ifndef CONFIG_H
 #define CONFIG_H
 
+#include <cstdint>
 #include <map>
+#include <optional>
 #include <string>
 #include <string_view>
-#include <cstdint>
 #include <utility>
-#include <vector>
-#include <optional>
 #include <variant>
+#include <vector>
 
 #include <toml.hpp>
 
@@ -65,16 +65,11 @@ public:
       , frequency_range_(center_frequency - sample_rate / 2, center_frequency + sample_rate / 2)
       , sample_rate_(sample_rate){};
 
-  friend auto operator==(const SpectrumSlice<T>&, const SpectrumSlice<T>&) -> bool;
-  friend auto operator!=(const SpectrumSlice<T>&, const SpectrumSlice<T>&) -> bool;
-};
+  friend auto operator==(const SpectrumSlice<T>& lhs, const SpectrumSlice<T>& rhs) -> bool {
+    return lhs.center_frequency_ == rhs.center_frequency_ && lhs.sample_rate_ == rhs.sample_rate_;
+  };
 
-template <typename T> auto operator==(const SpectrumSlice<T>& lhs, const SpectrumSlice<T>& rhs) -> bool {
-  return lhs.center_frequency_ == rhs.center_frequency_ && lhs.sample_rate_ == rhs.sample_rate_;
-};
-
-template <typename T> auto operator!=(const SpectrumSlice<T>& lhs, const SpectrumSlice<T>& rhs) -> bool {
-  return !operator==<T>(lhs, rhs);
+  friend auto operator!=(const SpectrumSlice<T>& lhs, const SpectrumSlice<T>& rhs) -> bool { return !(lhs == rhs); };
 };
 
 class Stream {

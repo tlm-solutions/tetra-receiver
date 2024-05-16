@@ -61,12 +61,12 @@ TopLevel::TopLevel(const SpectrumSlice<unsigned int>& spectrum, std::string devi
     , streams_(streams)
     , decimators_(decimators) {
   for (const auto& stream : streams) {
-    if (operator!=<unsigned int>(stream.input_spectrum_, spectrum)) {
+    if (stream.input_spectrum_ != spectrum) {
       throw std::invalid_argument("The output of Decimate does not match to the input of Stream.");
     }
   }
   for (const auto& decimator : decimators) {
-    if (operator!=<unsigned int>(decimator.input_spectrum_, spectrum)) {
+    if (decimator.input_spectrum_ != spectrum) {
       throw std::invalid_argument("The output of Decimate does not match to the input of Stream.");
     }
   }
