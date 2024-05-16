@@ -21,6 +21,10 @@ namespace config {
 [[maybe_unused]] const std::string kDefaultHost = "127.0.0.1";
 [[maybe_unused]] constexpr uint16_t kDefaultPort = 42000;
 
+// The default host to which we send the signal strength data for prometheus
+const std::string kDefaultPrometheusHost = "127.0.0.1";
+constexpr uint16_t kDefaultPrometheusPort = 9010;
+
 template <typename T> class Range {
 private:
   T min_ = 0;
@@ -187,8 +191,8 @@ template <> struct from<config::TopLevel> {
     const unsigned int rf_gain = find_or(v, "RFGain", 0);
     const unsigned int if_gain = find_or(v, "IFGain", 0);
     const unsigned int bb_gain = find_or(v, "BBGain", 0);
-    const std::string prometheus_host = find_or<std::string>(v, "PrometheusHost", "127.0.0.1");
-    const uint16_t prometheus_port = find_or(v, "PrometheusPort", 26100);
+    const std::string prometheus_host = find_or<std::string>(v, "PrometheusHost", config::kDefaultPrometheusHost);
+    const uint16_t prometheus_port = find_or(v, "PrometheusPort", config::kDefaultPrometheusPort);
 
     config::SpectrumSlice<unsigned int> sdr_spectrum(center_frequency, sample_rate);
 
