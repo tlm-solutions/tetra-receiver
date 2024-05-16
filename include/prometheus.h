@@ -10,15 +10,14 @@
 
 class PrometheusExporter {
 private:
-    std::shared_ptr<prometheus::Registry> registry_;
-    std::unique_ptr<prometheus::Exposer> exposer_;
+  std::shared_ptr<prometheus::Registry> registry_;
+  std::unique_ptr<prometheus::Exposer> exposer_;
+
 public:
+  PrometheusExporter(const std::string& host) noexcept;
+  ~PrometheusExporter() noexcept = default;
 
-    PrometheusExporter(const std::string& host) noexcept;
-    ~PrometheusExporter() noexcept = default;
-
-    auto signal_strength() noexcept -> prometheus::Family<prometheus::Gauge> &;
+  auto signal_strength() noexcept -> prometheus::Family<prometheus::Gauge>&;
 };
 
-
-#endif //FUNNEL_PROMETHEUS_HPP
+#endif // FUNNEL_PROMETHEUS_HPP
