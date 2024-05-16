@@ -6,10 +6,10 @@
 #include <string_view>
 #include <utility>
 #include <vector>
-
 #include <optional>
-#include <toml.hpp>
 #include <variant>
+
+#include <toml.hpp>
 
 namespace config {
 
