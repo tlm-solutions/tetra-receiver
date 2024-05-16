@@ -156,7 +156,7 @@ auto main(int argc, char** argv) -> int {
       ("center-frequency", "Center frequency of the SDR", cxxopts::value<unsigned int>()->default_value("0"))
       ("offsets", "offsets of the TETRA streams", cxxopts::value<std::vector<int>>())
       ("samp-rate", "Sample rate of the sdr", cxxopts::value<unsigned int>()->default_value("1000000"))
-      ("udp-start", "Start UDP port. Each stream gets its own UDP port, starting at udp-start", cxxopts::value<unsigned int>()->default_value("27000"))
+      ("udp-start", "Start UDP port. Each stream gets its own UDP port, starting at udp-start", cxxopts::value<uint16_t>()->default_value("42000"))
       ("prometheus-host", "Address of prometheus server for exporting metrics.", cxxopts::value<std::string>()->default_value("127.0.0.1:26100"))
       ;
     // clang-format on
