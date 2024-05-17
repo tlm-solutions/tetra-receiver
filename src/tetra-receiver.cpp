@@ -6,6 +6,7 @@
 
 #include <cxxopts.hpp>
 #include <gnuradio/analog/feedforward_agc_cc.h>
+#include <gnuradio/blocks/complex_to_mag_squared.h>
 #include <gnuradio/blocks/null_sink.h>
 #include <gnuradio/blocks/udp_sink.h>
 #include <gnuradio/blocks/unpack_k_bits_bb.h>
@@ -17,6 +18,7 @@
 #include <gnuradio/digital/fll_band_edge_cc.h>
 #include <gnuradio/digital/map_bb.h>
 #include <gnuradio/digital/pfb_clock_sync_ccf.h>
+#include <gnuradio/filter/fir_filter_blk.h>
 #include <gnuradio/filter/firdes.h>
 #include <gnuradio/filter/freq_xlating_fir_filter.h>
 #include <gnuradio/filter/mmse_resampler_cc.h>
@@ -47,6 +49,8 @@ public:
   gr::top_block_sptr tb = nullptr;
   /// the optional prometheus exporter
   std::shared_ptr<PrometheusExporter> exporter = nullptr;
+  /// the polling interval of the exporter
+  unsigned int polling_interval = 0;
 };
 
 class GnuradioBuilder {
@@ -99,11 +103,30 @@ private:
     tb->connect(digital_map_bb, 0, blocks_unpack_k_bits_bb, 0);
     tb->connect(blocks_unpack_k_bits_bb, 0, blocks_udp_sink, 0);
 
-    // TODO: add block that measure the signal strength
-    // auto& signal_strength = exporter->signal_strength();
+    // create blocks to save the power of the current channel if prometheus exporter is available
+    if (app_data.exporter) {
+      auto& signal_strength = app_data.exporter->signal_strength();
+      auto& stream_signal_strength = signal_strength.Add(
+          {{"frequency", std::to_string(stream.spectrum_.center_frequency_)}, {"name", stream.name_}});
 
-    // signal_strength.Add({{"signal_strength", 0}}).SetToCurrentTime();
-    // signal_strength.Add({{"signal_strength", 0}}).Set(25.123);
+      auto mag_squared = gr::blocks::complex_to_mag_squared::make();
+      // low pass filter the signal based on the polling interval so we adhear to nyquist
+      double cutoff_freq = 1.0 / static_cast<double>(2 * app_data.polling_interval);
+      auto downsampler_taps =
+          gr::filter::firdes::low_pass(/*gain=*/1.0, /*sampling_freq=*/stream.spectrum_.sample_rate_,
+                                       /*cutoff_freq=*/cutoff_freq, /*transition_width=*/cutoff_freq * 0.2);
+      // do not decimate directly to the final frequency, since there will be some jitter
+      unsigned decimation = stream.spectrum_.sample_rate_ * app_data.polling_interval / 10;
+      auto fir = gr::filter::fir_filter_fff::make(/*decimation=*/decimation, downsampler_taps);
+
+      tb->connect(xlat, 0, mag_squared, 0);
+      tb->connect(mag_squared, 0, fir, 0);
+
+      // TODO: write a block that takes the samples and saves them for prometheus
+
+      // signal_strength.Add({{"signal_strength", 0}}).SetToCurrentTime();
+      // signal_strength.Add({{"signal_strength", 0}}).Set(25.123);
+    }
   };
 
   static auto from_config(const config::Decimate& decimate, ApplicationData& app_data, gr::basic_block_sptr input)
@@ -140,6 +163,7 @@ public:
     if (top.prometheus_) {
       std::string prometheus_addr = top.prometheus_->host_ + ":" + std::to_string(top.prometheus_->port_);
       app_data.exporter = std::make_shared<PrometheusExporter>(prometheus_addr);
+      app_data.polling_interval = top.prometheus_->polling_interval_;
     }
 
     // setup osmosdr source
@@ -222,8 +246,9 @@ auto main(int argc, char** argv) -> int {
         auto udp_port = udp_start + std::distance(offsets.begin(), offsets_it);
 
         const auto tetra_spectrum = config::SpectrumSlice(stream_frequency, config::kTetraSampleRate);
+        std::string name = "Stream " + std::to_string(stream_frequency);
 
-        streams.emplace_back(config::Stream(input_spectrum, tetra_spectrum, config::kDefaultHost, udp_port));
+        streams.emplace_back(config::Stream(name, input_spectrum, tetra_spectrum, config::kDefaultHost, udp_port));
       }
 
       config::TopLevel top(input_spectrum, device_string, rf_gain, if_gain, bb_gain,

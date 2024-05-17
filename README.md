@@ -58,7 +58,7 @@ BBGain = unsigned int (default 0)
 [Prometheus]
 Host = "string" (default 127.0.0.1)
 Port = unsigned int (default 9010)
-PollInterval = unsigned int
+PollInterval = unsigned int (in seconds)
 
 [DecimateA]
 Frequency = unsigned int
