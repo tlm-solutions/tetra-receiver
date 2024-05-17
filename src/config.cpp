@@ -2,9 +2,10 @@
 
 namespace config {
 
-Stream::Stream(const SpectrumSlice<unsigned int>& input_spectrum, const SpectrumSlice<unsigned int>& spectrum,
-               std::string host, uint16_t port)
-    : input_spectrum_(input_spectrum)
+Stream::Stream(const std::string& name, const SpectrumSlice<unsigned int>& input_spectrum,
+               const SpectrumSlice<unsigned int>& spectrum, std::string host, uint16_t port)
+    : name_(name)
+    , input_spectrum_(input_spectrum)
     , spectrum_(spectrum)
     , host_(std::move(host))
     , port_(port) {
@@ -23,8 +24,10 @@ Stream::Stream(const SpectrumSlice<unsigned int>& input_spectrum, const Spectrum
   }
 }
 
-Decimate::Decimate(const SpectrumSlice<unsigned int>& input_spectrum, const SpectrumSlice<unsigned int>& spectrum)
-    : input_spectrum_(input_spectrum)
+Decimate::Decimate(const std::string& name, const SpectrumSlice<unsigned int>& input_spectrum,
+                   const SpectrumSlice<unsigned int>& spectrum)
+    : name_(name)
+    , input_spectrum_(input_spectrum)
     , spectrum_(spectrum) {
   // check that this Stream is valid
   if (!input_spectrum.frequency_range_.contains(spectrum.frequency_range_)) {

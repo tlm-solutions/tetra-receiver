@@ -83,6 +83,8 @@ public:
 
 class Stream {
 public:
+  /// the name of the table in the config
+  const std::string name_;
   /// the slice of spectrum_ that is input to this block
   const SpectrumSlice<unsigned int> input_spectrum_;
   /// the slice of spectrum_ of the TETRA Stream
@@ -102,16 +104,19 @@ public:
 
   /// Describe the on which frequency a TETRA Stream should be extracted and
   /// where data should be sent to.
+  /// \param name the name of the table in the config
   /// \param input_spectrum the slice of spectrum that is input to this block
   /// \param spectrum the slice of spectrum of the TETRA Stream
   /// \param host the to send the data to
   /// \param port the port to send the data to
-  Stream(const SpectrumSlice<unsigned int>& input_spectrum, const SpectrumSlice<unsigned int>& spectrum,
-         std::string host, uint16_t port);
+  Stream(const std::string& name, const SpectrumSlice<unsigned int>& input_spectrum,
+         const SpectrumSlice<unsigned int>& spectrum, std::string host, uint16_t port);
 };
 
 class Decimate {
 public:
+  /// the name of the table in the config
+  const std::string name_;
   /// the slice of spectrum that is input to this block
   const SpectrumSlice<unsigned int> input_spectrum_;
   /// the slice of spectrum after decimation_
@@ -128,11 +133,13 @@ public:
 
   /// Describe the decimation of the SDR Stream by the frequency where we want
   /// to extract a signal with a width of sample_rate
+  /// \param name the name of the table in the config
   /// \param input_spectrum the slice of spectrum that is input to this block
   /// \param spectrum the slice of spectrum after decimation
   /// \param streams the vector of streams the decimated signal should be sent
   /// to
-  Decimate(const SpectrumSlice<unsigned int>& input_spectrum, const SpectrumSlice<unsigned int>& spectrum);
+  Decimate(const std::string& name, const SpectrumSlice<unsigned int>& input_spectrum,
+           const SpectrumSlice<unsigned int>& spectrum);
 };
 
 class Prometheus {
@@ -187,7 +194,7 @@ using decimate_or_stream = std::variant<Decimate, Stream>;
 namespace toml {
 
 static config::decimate_or_stream get_decimate_or_stream(const config::SpectrumSlice<unsigned int>& input_spectrum,
-                                                         const value& v) {
+                                                         const std::string& name, const value& v) {
   std::optional<unsigned int> sample_rate;
 
   const unsigned int frequency = find<unsigned int>(v, "Frequency");
@@ -200,10 +207,10 @@ static config::decimate_or_stream get_decimate_or_stream(const config::SpectrumS
   // If we have a sample rate specified this is a Decimate, otherwhise this is
   // a Stream.
   if (sample_rate.has_value()) {
-    return config::Decimate(input_spectrum, config::SpectrumSlice<unsigned int>(frequency, *sample_rate));
+    return config::Decimate(name, input_spectrum, config::SpectrumSlice<unsigned int>(frequency, *sample_rate));
   } else {
-    return config::Stream(input_spectrum, config::SpectrumSlice<unsigned int>(frequency, config::kTetraSampleRate),
-                          host, port);
+    return config::Stream(name, input_spectrum,
+                          config::SpectrumSlice<unsigned int>(frequency, config::kTetraSampleRate), host, port);
   }
 }
 
@@ -246,7 +253,7 @@ template <> struct from<config::TopLevel> {
         continue;
       }
 
-      const auto element = get_decimate_or_stream(sdr_spectrum, table);
+      const auto element = get_decimate_or_stream(sdr_spectrum, name, table);
 
       // Save the Stream
       if (std::holds_alternative<config::Stream>(element)) {
@@ -263,12 +270,13 @@ template <> struct from<config::TopLevel> {
         // Find all subtables, that must be Stream entries and add them to the
         // decimator
         for (const auto& stream_pair : table.as_table()) {
+          auto& stream_name = stream_pair.first;
           auto& stream_table = stream_pair.second;
 
           if (!stream_table.is_table())
             continue;
 
-          const auto stream_element = get_decimate_or_stream(decimate_element.spectrum_, stream_table);
+          const auto stream_element = get_decimate_or_stream(decimate_element.spectrum_, stream_name, stream_table);
 
           if (!std::holds_alternative<config::Stream>(stream_element)) {
             throw std::invalid_argument("Did not find a Stream block under the Decimate block");
