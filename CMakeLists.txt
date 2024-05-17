@@ -34,6 +34,7 @@ target_include_directories(lib-tetra-receiver PUBLIC include)
 #
 add_executable(tetra-receiver
         src/prometheus.cpp
+        src/prometheus_gauge_populator.cpp
         src/tetra-receiver.cpp
 )
 

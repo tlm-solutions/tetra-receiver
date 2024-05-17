@@ -30,6 +30,7 @@
 
 #include "config.h"
 #include "prometheus.h"
+#include "prometheus_gauge_populator.h"
 
 static auto print_gnuradio_diagnostics() -> void {
   const auto ver = gr::version();
@@ -118,14 +119,11 @@ private:
       // do not decimate directly to the final frequency, since there will be some jitter
       unsigned decimation = stream.spectrum_.sample_rate_ * app_data.polling_interval / 10;
       auto fir = gr::filter::fir_filter_fff::make(/*decimation=*/decimation, downsampler_taps);
+      auto populator = gr::prometheus::prometheus_gauge_populator::make(/*gauge=*/stream_signal_strength);
 
       tb->connect(xlat, 0, mag_squared, 0);
       tb->connect(mag_squared, 0, fir, 0);
-
-      // TODO: write a block that takes the samples and saves them for prometheus
-
-      // signal_strength.Add({{"signal_strength", 0}}).SetToCurrentTime();
-      // signal_strength.Add({{"signal_strength", 0}}).Set(25.123);
+      tb->connect(fir, 0, populator, 0);
     }
   };
 
