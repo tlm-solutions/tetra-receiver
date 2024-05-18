@@ -22,8 +22,6 @@ int PrometheusGaugePopulator::general_work(const int, gr_vector_int& ninput_item
   const auto* in = (const float*)input_items[0];
   assert(input_count > 0 && "general_work called with zero input items");
 
-  GR_LOG_DEBUG(d_logger, "Called gauge populator with " + std::to_string(input_count) + " items");
-
   // Consume one and write it to the gauge.
   const auto item = *in;
   consume_each(1);
