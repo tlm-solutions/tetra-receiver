@@ -101,7 +101,6 @@ TEST(config /*unused*/, TopLevel_prometheus_default /*unused*/) {
 		SampleRate = 60000
 		
 		[Prometheus]
-		PollInterval = 10
 	)"_toml;
 
   const config::TopLevel t = toml::get<config::TopLevel>(config_object);
@@ -111,7 +110,6 @@ TEST(config /*unused*/, TopLevel_prometheus_default /*unused*/) {
 
   EXPECT_EQ(t.prometheus_->host_, config::kDefaultPrometheusHost);
   EXPECT_EQ(t.prometheus_->port_, config::kDefaultPrometheusPort);
-  EXPECT_EQ(t.prometheus_->polling_interval_, 10);
 }
 
 TEST(config /*unused*/, TopLevel_prometheus_set /*unused*/) {
@@ -123,7 +121,6 @@ TEST(config /*unused*/, TopLevel_prometheus_set /*unused*/) {
 		[Prometheus]
 		Host = "127.0.0.2"
 		Port = 4200
-		PollInterval = 20
 	)"_toml;
 
   const config::TopLevel t = toml::get<config::TopLevel>(config_object);
@@ -133,7 +130,6 @@ TEST(config /*unused*/, TopLevel_prometheus_set /*unused*/) {
 
   EXPECT_EQ(t.prometheus_->host_, "127.0.0.2");
   EXPECT_EQ(t.prometheus_->port_, 4200);
-  EXPECT_EQ(t.prometheus_->polling_interval_, 20);
 }
 
 TEST(config /*unused*/, TopLevel_valid_parser /*unused*/) {

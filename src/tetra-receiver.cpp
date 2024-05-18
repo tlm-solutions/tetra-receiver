@@ -50,8 +50,6 @@ public:
   gr::top_block_sptr tb = nullptr;
   /// the optional prometheus exporter
   std::shared_ptr<PrometheusExporter> exporter = nullptr;
-  /// the polling interval of the exporter
-  unsigned int polling_interval = 0;
 };
 
 class GnuradioBuilder {
@@ -111,14 +109,12 @@ private:
           {{"frequency", std::to_string(stream.spectrum_.center_frequency_)}, {"name", stream.name_}});
 
       auto mag_squared = gr::blocks::complex_to_mag_squared::make();
-      // low pass filter the signal based on the polling interval so we adhear to nyquist
-      double cutoff_freq = 1.0 / static_cast<double>(2 * app_data.polling_interval);
-      auto downsampler_taps =
-          gr::filter::firdes::low_pass(/*gain=*/1.0, /*sampling_freq=*/stream.spectrum_.sample_rate_,
-                                       /*cutoff_freq=*/cutoff_freq, /*transition_width=*/cutoff_freq * 0.2);
+      // averaging filter over one second
+      unsigned tap_size = stream.spectrum_.sample_rate_;
+      std::vector<float> averaging_filter(/*count=*/tap_size, /*alloc=*/1.0 / tap_size);
       // do not decimate directly to the final frequency, since there will be some jitter
-      unsigned decimation = stream.spectrum_.sample_rate_ * app_data.polling_interval / 10;
-      auto fir = gr::filter::fir_filter_fff::make(/*decimation=*/decimation, downsampler_taps);
+      unsigned decimation = tap_size / 10;
+      auto fir = gr::filter::fir_filter_fff::make(/*decimation=*/decimation, averaging_filter);
       auto populator = gr::prometheus::PrometheusGaugePopulator::make(/*gauge=*/stream_signal_strength);
 
       tb->connect(xlat, 0, mag_squared, 0);
@@ -161,7 +157,6 @@ public:
     if (top.prometheus_) {
       std::string prometheus_addr = top.prometheus_->host_ + ":" + std::to_string(top.prometheus_->port_);
       app_data.exporter = std::make_shared<PrometheusExporter>(prometheus_addr);
-      app_data.polling_interval = top.prometheus_->polling_interval_;
     }
 
     // setup osmosdr source

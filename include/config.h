@@ -148,19 +148,15 @@ public:
   const std::string host_;
   /// the port to which prometheus is sending data to
   const uint16_t port_;
-  /// the polling interval of prometheus
-  unsigned int polling_interval_;
 
   Prometheus() = delete;
 
   /// The prometheus exporter to we want to send the metrics
   /// \param host the host to which prometheus is sending data
   /// \param port the port to which prometheus is sending data
-  /// \param polling_interval the interval at which data is sent
-  Prometheus(std::string host, const uint16_t port, const unsigned polling_interval)
+  Prometheus(std::string host, const uint16_t port)
       : host_(std::move(host))
-      , port_(port)
-      , polling_interval_(polling_interval){};
+      , port_(port){};
 };
 
 class TopLevel {
@@ -222,9 +218,8 @@ template <> struct from<std::unique_ptr<config::Prometheus>> {
   static auto from_toml(const value& v) -> std::unique_ptr<config::Prometheus> {
     const std::string prometheus_host = find_or(v, "Host", config::kDefaultPrometheusHost);
     const uint16_t prometheus_port = find_or(v, "Port", config::kDefaultPrometheusPort);
-    const unsigned int polling_interval = find<unsigned int>(v, "PollInterval");
 
-    return std::make_unique<config::Prometheus>(prometheus_host, prometheus_port, polling_interval);
+    return std::make_unique<config::Prometheus>(prometheus_host, prometheus_port);
   }
 };
 
