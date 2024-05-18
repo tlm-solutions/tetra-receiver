@@ -1,5 +1,5 @@
-#ifndef FUNNEL_PROMETHEUS_HPP
-#define FUNNEL_PROMETHEUS_HPP
+#ifndef PROMETHEUS_H
+#define PROMETHEUS_H
 
 #include <memory>
 
@@ -19,4 +19,4 @@ public:
   auto signal_strength() noexcept -> prometheus::Family<prometheus::Gauge>&;
 };
 
-#endif // FUNNEL_PROMETHEUS_HPP
+#endif // PROMETHEUS_H

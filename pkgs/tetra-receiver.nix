@@ -6,14 +6,13 @@
 , mpir
 , gmpxx
 , cxxopts
-, toml11
 , fetchFromGitHub
 , stdenv
 , gtest
 , prometheus-cpp
 , zlib
-, curlFull
 , glibc
+, curlFull
 }:
 let
   toml11 = stdenv.mkDerivation {
@@ -44,7 +43,7 @@ let
     outputs = [ "out" ];
   });
 in
-stdenv.mkDerivation {
+stdenv.mkDerivation rec {
   name = "tetra-receiver";
   version = "0.1.0";
 
@@ -65,7 +64,11 @@ stdenv.mkDerivation {
     prometheus-cpp
     zlib
     curlFull
+    #glibc
   ];
+  preConfigure = ''
+    echo "-DCMAKE_PREFIX_PATH=${osmosdr}/lib/cmake/osmosdr"
+  '';
 
   cmakeFlags = [ "-DCMAKE_PREFIX_PATH=${osmosdr}/lib/cmake/osmosdr" ];
 

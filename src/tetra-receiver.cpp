@@ -119,7 +119,7 @@ private:
       // do not decimate directly to the final frequency, since there will be some jitter
       unsigned decimation = stream.spectrum_.sample_rate_ * app_data.polling_interval / 10;
       auto fir = gr::filter::fir_filter_fff::make(/*decimation=*/decimation, downsampler_taps);
-      auto populator = gr::prometheus::prometheus_gauge_populator::make(/*gauge=*/stream_signal_strength);
+      auto populator = gr::prometheus::PrometheusGaugePopulator::make(/*gauge=*/stream_signal_strength);
 
       tb->connect(xlat, 0, mag_squared, 0);
       tb->connect(mag_squared, 0, fir, 0);

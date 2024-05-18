@@ -8,5 +8,5 @@ PrometheusExporter::PrometheusExporter(const std::string& prometheus_host) noexc
 }
 
 auto PrometheusExporter::signal_strength() noexcept -> prometheus::Family<prometheus::Gauge>& {
-  return prometheus::BuildGauge().Name("signal_strength").Help("Current Signal Strenght").Register(*registry_);
+  return prometheus::BuildGauge().Name("signal_strength").Help("Current Signal Strength").Register(*registry_);
 }
