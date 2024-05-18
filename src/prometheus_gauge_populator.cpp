@@ -16,11 +16,9 @@ PrometheusGaugePopulator::PrometheusGaugePopulator(::prometheus::Gauge& gauge)
           /*output_signature=*/io_signature::make(/*min_streams=*/0, /*max_streams=*/0, /*sizeof_stream_items=*/0))
     , gauge_(gauge) {}
 
-int PrometheusGaugePopulator::general_work(const int, gr_vector_int& ninput_items,
-                                           gr_vector_const_void_star& input_items, gr_vector_void_star&) {
-  const int input_count = ninput_items[0];
+int PrometheusGaugePopulator::general_work(const int, gr_vector_int&, gr_vector_const_void_star& input_items,
+                                           gr_vector_void_star&) {
   const auto* in = (const float*)input_items[0];
-  assert(input_count > 0 && "general_work called with zero input items");
 
   // Consume one and write it to the gauge.
   const auto item = *in;
