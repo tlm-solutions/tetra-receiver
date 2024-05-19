@@ -12,6 +12,7 @@ find_package(Volk REQUIRED)
 find_package(gnuradio-osmosdr REQUIRED)
 find_package(cxxopts REQUIRED)
 find_package(prometheus-cpp CONFIG REQUIRED)
+find_package(GMP REQUIRED)
 
 include_directories(${GNURADIO_ALL_INCLUDE_DIRS})
 
@@ -25,34 +26,39 @@ enable_testing()
 #
 add_library(lib-tetra-receiver
         src/config.cpp
+        src/prometheus.cpp
+        src/prometheus_gauge_populator.cpp
 )
 
 target_include_directories(lib-tetra-receiver PUBLIC include)
+
+target_link_libraries(lib-tetra-receiver
+        log4cpp
+        volk
+        gnuradio-osmosdr
+        gnuradio-digital
+        gnuradio-analog
+        gnuradio-filter
+        gnuradio-blocks
+        gnuradio-fft
+        gnuradio-runtime
+        gnuradio-pmt
+        prometheus-cpp::pull
+        gmp
+        #libgmp
+)
 
 #
 # Build the tool
 #
 add_executable(tetra-receiver
-        src/prometheus.cpp
-        src/prometheus_gauge_populator.cpp
         src/tetra-receiver.cpp
 )
 
 target_compile_options(tetra-receiver PUBLIC -std=c++17 -Wall)
 
-target_link_libraries(tetra-receiver 
+target_link_libraries(tetra-receiver
   lib-tetra-receiver 
-  log4cpp 
-  volk 
-  gnuradio-osmosdr 
-  gnuradio-digital 
-  gnuradio-analog 
-  gnuradio-filter 
-  gnuradio-blocks 
-  gnuradio-fft 
-  gnuradio-runtime 
-  gnuradio-pmt
-  prometheus-cpp::pull
 )
 
 #
