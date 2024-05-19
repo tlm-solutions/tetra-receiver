@@ -4,7 +4,7 @@
 
 using namespace toml::literals::toml_literals;
 
-TEST(config /*unused*/, Range_order /*unused*/) {
+TEST(config, Range_order) {
   config::Range<unsigned int> ordered_range(10, 12);
   EXPECT_EQ(ordered_range.lower_bound(), 10);
   EXPECT_EQ(ordered_range.upper_bound(), 12);
@@ -14,7 +14,7 @@ TEST(config /*unused*/, Range_order /*unused*/) {
   EXPECT_EQ(unordered_range.upper_bound(), 12);
 }
 
-TEST(config /*unused*/, Range_contains /*unused*/) {
+TEST(config, Range_contains) {
   config::Range<unsigned int> ref_range(10, 13);
 
   // a range contains itself
@@ -37,7 +37,7 @@ TEST(config /*unused*/, Range_contains /*unused*/) {
   EXPECT_FALSE(ref_range.contains(config::Range<unsigned int>(14, 15)));
 }
 
-TEST(config /*unused*/, SpectrumSlice_range /*unused*/) {
+TEST(config, SpectrumSlice_range) {
   config::SpectrumSlice<unsigned int> slice(/*center_frequency=*/1000, /*sample_rate=*/200);
   EXPECT_EQ(slice.center_frequency_, 1000);
   EXPECT_EQ(slice.frequency_range_.lower_bound(), 900);
@@ -45,7 +45,7 @@ TEST(config /*unused*/, SpectrumSlice_range /*unused*/) {
   EXPECT_EQ(slice.sample_rate_, 200);
 }
 
-TEST(config /*unused*/, TopLevel_decimate_not_divisible /*unused*/) {
+TEST(config, TopLevel_decimate_not_divisible) {
   const toml::value config_object = u8R"(
 		CenterFrequency = 4000000
 		DeviceString = "device_string_abc"
@@ -60,7 +60,7 @@ TEST(config /*unused*/, TopLevel_decimate_not_divisible /*unused*/) {
   EXPECT_THROW(toml::get<config::TopLevel>(config_object), std::invalid_argument);
 }
 
-TEST(config /*unused*/, TopLevel_stream_not_divisible /*unused*/) {
+TEST(config, TopLevel_stream_not_divisible) {
   const toml::value config_object = u8R"(
 		CenterFrequency = 4000000
 		DeviceString = "device_string_abc"
@@ -75,7 +75,7 @@ TEST(config /*unused*/, TopLevel_stream_not_divisible /*unused*/) {
   EXPECT_THROW(toml::get<config::TopLevel>(config_object), std::invalid_argument);
 }
 
-TEST(config /*unused*/, TopLevel_decimate_under_decimate /*unused*/) {
+TEST(config, TopLevel_decimate_under_decimate) {
   const toml::value config_object = u8R"(
 		CenterFrequency = 4000000
 		DeviceString = "device_string_abc"
@@ -94,7 +94,7 @@ TEST(config /*unused*/, TopLevel_decimate_under_decimate /*unused*/) {
   EXPECT_THROW(toml::get<config::TopLevel>(config_object), std::invalid_argument);
 }
 
-TEST(config /*unused*/, TopLevel_prometheus_default /*unused*/) {
+TEST(config, TopLevel_prometheus_default) {
   const toml::value config_object = u8R"(
 		CenterFrequency = 4000000
 		DeviceString = "device_string_abc"
@@ -112,7 +112,7 @@ TEST(config /*unused*/, TopLevel_prometheus_default /*unused*/) {
   EXPECT_EQ(t.prometheus_->port_, config::kDefaultPrometheusPort);
 }
 
-TEST(config /*unused*/, TopLevel_prometheus_set /*unused*/) {
+TEST(config, TopLevel_prometheus_set) {
   const toml::value config_object = u8R"(
 		CenterFrequency = 4000000
 		DeviceString = "device_string_abc"
@@ -132,7 +132,7 @@ TEST(config /*unused*/, TopLevel_prometheus_set /*unused*/) {
   EXPECT_EQ(t.prometheus_->port_, 4200);
 }
 
-TEST(config /*unused*/, TopLevel_valid_parser /*unused*/) {
+TEST(config, TopLevel_valid_parser) {
   const toml::value config_object = u8R"(
 		CenterFrequency = 4000000
 		DeviceString = "device_string_abc"
