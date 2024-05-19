@@ -2,9 +2,10 @@
 
 namespace config {
 
-Stream::Stream(const SpectrumSlice<unsigned int>& input_spectrum, const SpectrumSlice<unsigned int>& spectrum,
-               std::string host, unsigned int port)
-    : input_spectrum_(input_spectrum)
+Stream::Stream(const std::string& name, const SpectrumSlice<unsigned int>& input_spectrum,
+               const SpectrumSlice<unsigned int>& spectrum, std::string host, uint16_t port)
+    : name_(name)
+    , input_spectrum_(input_spectrum)
     , spectrum_(spectrum)
     , host_(std::move(host))
     , port_(port) {
@@ -23,8 +24,10 @@ Stream::Stream(const SpectrumSlice<unsigned int>& input_spectrum, const Spectrum
   }
 }
 
-Decimate::Decimate(const SpectrumSlice<unsigned int>& input_spectrum, const SpectrumSlice<unsigned int>& spectrum)
-    : input_spectrum_(input_spectrum)
+Decimate::Decimate(const std::string& name, const SpectrumSlice<unsigned int>& input_spectrum,
+                   const SpectrumSlice<unsigned int>& spectrum)
+    : name_(name)
+    , input_spectrum_(input_spectrum)
     , spectrum_(spectrum) {
   // check that this Stream is valid
   if (!input_spectrum.frequency_range_.contains(spectrum.frequency_range_)) {
@@ -49,21 +52,22 @@ Decimate::Decimate(const SpectrumSlice<unsigned int>& input_spectrum, const Spec
 
 TopLevel::TopLevel(const SpectrumSlice<unsigned int>& spectrum, std::string device_string, const unsigned int rf_gain,
                    const unsigned int if_gain, const unsigned int bb_gain, const std::vector<Stream>& streams,
-                   const std::vector<Decimate>& decimators)
+                   const std::vector<Decimate>& decimators, std::unique_ptr<Prometheus>&& prometheus)
     : spectrum_(spectrum)
     , device_string_(std::move(device_string))
     , rf_gain_(rf_gain)
     , if_gain_(if_gain)
     , bb_gain_(bb_gain)
     , streams_(streams)
-    , decimators_(decimators) {
+    , decimators_(decimators)
+    , prometheus_(std::move(prometheus)) {
   for (const auto& stream : streams) {
-    if (operator!=<unsigned int>(stream.input_spectrum_, spectrum)) {
+    if (stream.input_spectrum_ != spectrum) {
       throw std::invalid_argument("The output of Decimate does not match to the input of Stream.");
     }
   }
   for (const auto& decimator : decimators) {
-    if (operator!=<unsigned int>(decimator.input_spectrum_, spectrum)) {
+    if (decimator.input_spectrum_ != spectrum) {
       throw std::invalid_argument("The output of Decimate does not match to the input of Stream.");
     }
   }

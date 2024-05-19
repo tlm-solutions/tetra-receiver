@@ -94,6 +94,44 @@ TEST(config, TopLevel_decimate_under_decimate) {
   EXPECT_THROW(toml::get<config::TopLevel>(config_object), std::invalid_argument);
 }
 
+TEST(config, TopLevel_prometheus_default) {
+  const toml::value config_object = u8R"(
+		CenterFrequency = 4000000
+		DeviceString = "device_string_abc"
+		SampleRate = 60000
+		
+		[Prometheus]
+	)"_toml;
+
+  const config::TopLevel t = toml::get<config::TopLevel>(config_object);
+
+  // prometheus is set
+  EXPECT_TRUE(t.prometheus_);
+
+  EXPECT_EQ(t.prometheus_->host_, config::kDefaultPrometheusHost);
+  EXPECT_EQ(t.prometheus_->port_, config::kDefaultPrometheusPort);
+}
+
+TEST(config, TopLevel_prometheus_set) {
+  const toml::value config_object = u8R"(
+		CenterFrequency = 4000000
+		DeviceString = "device_string_abc"
+		SampleRate = 60000
+	
+		[Prometheus]
+		Host = "127.0.0.2"
+		Port = 4200
+	)"_toml;
+
+  const config::TopLevel t = toml::get<config::TopLevel>(config_object);
+
+  // prometheus is set
+  EXPECT_TRUE(t.prometheus_);
+
+  EXPECT_EQ(t.prometheus_->host_, "127.0.0.2");
+  EXPECT_EQ(t.prometheus_->port_, 4200);
+}
+
 TEST(config, TopLevel_valid_parser) {
   const toml::value config_object = u8R"(
 		CenterFrequency = 4000000
@@ -128,9 +166,13 @@ TEST(config, TopLevel_valid_parser) {
   EXPECT_EQ(t.if_gain_, 14);
   EXPECT_EQ(t.bb_gain_, 0);
 
+  // prometheus is not set
+  EXPECT_FALSE(t.prometheus_);
+
   EXPECT_EQ(t.decimators_.size(), 1);
   const auto& decimate_a = t.decimators_[0];
 
+  EXPECT_EQ(decimate_a.name_, "DecimateA");
   EXPECT_EQ(decimate_a.spectrum_.center_frequency_, 4250000);
   EXPECT_EQ(decimate_a.spectrum_.sample_rate_, 500000);
   EXPECT_EQ(decimate_a.decimation_, 2);
@@ -139,12 +181,14 @@ TEST(config, TopLevel_valid_parser) {
   const auto& stream_0 = decimate_a.streams_[1];
   const auto& stream_1 = decimate_a.streams_[0];
 
+  EXPECT_EQ(stream_0.name_, "Stream0");
   EXPECT_EQ(stream_0.spectrum_.center_frequency_, 4250010);
   EXPECT_EQ(stream_0.spectrum_.sample_rate_, config::kTetraSampleRate);
   EXPECT_EQ(stream_0.host_, "127.0.0.1");
   EXPECT_EQ(stream_0.port_, 4100);
   EXPECT_EQ(stream_0.decimation_, 20);
 
+  EXPECT_EQ(stream_1.name_, "Stream1");
   EXPECT_EQ(stream_1.spectrum_.center_frequency_, 4250100);
   EXPECT_EQ(stream_1.spectrum_.sample_rate_, config::kTetraSampleRate);
   EXPECT_EQ(stream_1.host_, config::kDefaultHost);
@@ -154,6 +198,7 @@ TEST(config, TopLevel_valid_parser) {
   EXPECT_EQ(t.streams_.size(), 1);
   const auto& stream_2 = t.streams_[0];
 
+  EXPECT_EQ(stream_2.name_, "Stream2");
   EXPECT_EQ(stream_2.spectrum_.center_frequency_, 4000100);
   EXPECT_EQ(stream_2.spectrum_.sample_rate_, config::kTetraSampleRate);
   EXPECT_EQ(stream_2.host_, "127.0.0.2");

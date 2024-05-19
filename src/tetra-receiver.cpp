@@ -6,6 +6,7 @@
 
 #include <cxxopts.hpp>
 #include <gnuradio/analog/feedforward_agc_cc.h>
+#include <gnuradio/blocks/complex_to_mag_squared.h>
 #include <gnuradio/blocks/null_sink.h>
 #include <gnuradio/blocks/udp_sink.h>
 #include <gnuradio/blocks/unpack_k_bits_bb.h>
@@ -17,6 +18,7 @@
 #include <gnuradio/digital/fll_band_edge_cc.h>
 #include <gnuradio/digital/map_bb.h>
 #include <gnuradio/digital/pfb_clock_sync_ccf.h>
+#include <gnuradio/filter/fir_filter_blk.h>
 #include <gnuradio/filter/firdes.h>
 #include <gnuradio/filter/freq_xlating_fir_filter.h>
 #include <gnuradio/filter/mmse_resampler_cc.h>
@@ -27,6 +29,8 @@
 #include <osmosdr/source.h>
 
 #include "config.h"
+#include "prometheus.h"
+#include "prometheus_gauge_populator.h"
 
 static auto print_gnuradio_diagnostics() -> void {
   const auto ver = gr::version();
@@ -40,9 +44,19 @@ static auto print_gnuradio_diagnostics() -> void {
             << "\n\n Compiler Flags: " << compiler_flags << "\n\n";
 }
 
-class GnuradioTopBlock {
+class ApplicationData {
+public:
+  /// The gnuradio top block
+  gr::top_block_sptr tb = nullptr;
+  /// the optional prometheus exporter
+  std::shared_ptr<PrometheusExporter> exporter = nullptr;
+};
+
+class GnuradioBuilder {
 private:
-  static auto from_config(const config::Stream& stream, gr::top_block_sptr tb, gr::basic_block_sptr input) -> void {
+  static auto from_config(const config::Stream& stream, ApplicationData& app_data, gr::basic_block_sptr input) -> void {
+    auto& tb = app_data.tb;
+
     auto decimation = stream.decimation_;
     auto offset = static_cast<int>(stream.spectrum_.center_frequency_) -
                   static_cast<int>(stream.input_spectrum_.center_frequency_);
@@ -87,9 +101,32 @@ private:
     tb->connect(digital_constellation_decoder_cb, 0, digital_map_bb, 0);
     tb->connect(digital_map_bb, 0, blocks_unpack_k_bits_bb, 0);
     tb->connect(blocks_unpack_k_bits_bb, 0, blocks_udp_sink, 0);
+
+    // create blocks to save the power of the current channel if prometheus exporter is available
+    if (app_data.exporter) {
+      auto& signal_strength = app_data.exporter->signal_strength();
+      auto& stream_signal_strength = signal_strength.Add(
+          {{"frequency", std::to_string(stream.spectrum_.center_frequency_)}, {"name", stream.name_}});
+
+      auto mag_squared = gr::blocks::complex_to_mag_squared::make();
+      // averaging filter over one second
+      unsigned tap_size = stream.spectrum_.sample_rate_;
+      std::vector<float> averaging_filter(/*count=*/tap_size, /*alloc=*/1.0 / tap_size);
+      // do not decimate directly to the final frequency, since there will be some jitter
+      unsigned decimation = tap_size / 10;
+      auto fir = gr::filter::fir_filter_fff::make(/*decimation=*/decimation, averaging_filter);
+      auto populator = gr::prometheus::PrometheusGaugePopulator::make(/*gauge=*/stream_signal_strength);
+
+      tb->connect(xlat, 0, mag_squared, 0);
+      tb->connect(mag_squared, 0, fir, 0);
+      tb->connect(fir, 0, populator, 0);
+    }
   };
 
-  static auto from_config(const config::Decimate& decimate, gr::top_block_sptr tb, gr::basic_block_sptr input) -> void {
+  static auto from_config(const config::Decimate& decimate, ApplicationData& app_data, gr::basic_block_sptr input)
+      -> void {
+    auto& tb = app_data.tb;
+
     float half_sample_rate = decimate.spectrum_.sample_rate_ / 2;
     auto offset = static_cast<int>(decimate.spectrum_.center_frequency_) -
                   static_cast<int>(decimate.input_spectrum_.center_frequency_);
@@ -101,7 +138,7 @@ private:
     tb->connect(input, 0, xlat, 0);
 
     for (auto const& stream : decimate.streams_) {
-      from_config(stream, tb, xlat);
+      from_config(stream, app_data, xlat);
     }
 
     // add a null sink to have at least one connected
@@ -110,8 +147,17 @@ private:
   };
 
 public:
-  static auto from_config(const config::TopLevel& top) -> gr::top_block_sptr {
-    auto tb = gr::make_top_block("fg");
+  static auto from_config(const config::TopLevel& top) -> ApplicationData {
+    ApplicationData app_data;
+    auto& tb = app_data.tb;
+
+    tb = gr::make_top_block("fg");
+
+    // setup prometheus exporter
+    if (top.prometheus_) {
+      std::string prometheus_addr = top.prometheus_->host_ + ":" + std::to_string(top.prometheus_->port_);
+      app_data.exporter = std::make_shared<PrometheusExporter>(prometheus_addr);
+    }
 
     // setup osmosdr source
     auto src = osmosdr::source::make(top.device_string_);
@@ -126,17 +172,17 @@ public:
     src->set_bandwidth(top.spectrum_.sample_rate_ / 2, 0);
 
     for (auto const& decimate : top.decimators_) {
-      from_config(decimate, tb, src);
+      from_config(decimate, app_data, src);
     }
     for (auto const& stream : top.streams_) {
-      from_config(stream, tb, src);
+      from_config(stream, app_data, src);
     }
 
     // add a null sink to have at least one connected
     auto null_sink = gr::blocks::null_sink::make(/*sizeof_stream_item=*/sizeof(gr_complex));
     tb->connect(src, 0, null_sink, 0);
 
-    return tb;
+    return app_data;
   }
 };
 
@@ -155,7 +201,7 @@ auto main(int argc, char** argv) -> int {
       ("center-frequency", "Center frequency of the SDR", cxxopts::value<unsigned int>()->default_value("0"))
       ("offsets", "offsets of the TETRA streams", cxxopts::value<std::vector<int>>())
       ("samp-rate", "Sample rate of the sdr", cxxopts::value<unsigned int>()->default_value("1000000"))
-      ("udp-start", "Start UDP port. Each stream gets its own UDP port, starting at udp-start", cxxopts::value<unsigned int>()->default_value("42000"))
+      ("udp-start", "Start UDP port. Each stream gets its own UDP port, starting at udp-start", cxxopts::value<uint16_t>()->default_value("42000"))
       ;
     // clang-format on
 
@@ -166,14 +212,14 @@ auto main(int argc, char** argv) -> int {
       return EXIT_SUCCESS;
     }
 
-    gr::top_block_sptr tb = 0;
+    ApplicationData app_data;
 
     // Read from config file instead
     if (result.count("config-file")) {
       auto data = toml::parse(result["config-file"].as<std::string>());
-
       auto top = toml::get<config::TopLevel>(data);
-      tb = GnuradioTopBlock::from_config(top);
+
+      app_data = GnuradioBuilder::from_config(top);
     } else {
       const auto sample_rate = result["samp-rate"].as<unsigned int>();
       const auto& device_string = result["device-string"].as<std::string>();
@@ -193,21 +239,24 @@ auto main(int argc, char** argv) -> int {
         auto udp_port = udp_start + std::distance(offsets.begin(), offsets_it);
 
         const auto tetra_spectrum = config::SpectrumSlice(stream_frequency, config::kTetraSampleRate);
+        std::string name = "Stream " + std::to_string(stream_frequency);
 
-        streams.emplace_back(config::Stream(input_spectrum, tetra_spectrum, config::kDefaultHost, udp_port));
+        streams.emplace_back(config::Stream(name, input_spectrum, tetra_spectrum, config::kDefaultHost, udp_port));
       }
 
-      auto top = config::TopLevel(input_spectrum, device_string, rf_gain, if_gain, bb_gain, /*streams=*/streams,
-                                  /*decimators=*/{});
-      tb = GnuradioTopBlock::from_config(top);
+      config::TopLevel top(input_spectrum, device_string, rf_gain, if_gain, bb_gain,
+                           /*streams=*/streams,
+                           /*decimators=*/{}, /*prometheus=*/nullptr);
+
+      app_data = GnuradioBuilder::from_config(top);
     }
 
     // print the gnuradio debugging information
     print_gnuradio_diagnostics();
 
-    tb->start();
+    app_data.tb->start();
 
-    tb->wait();
+    app_data.tb->wait();
   } catch (std::exception& e) {
     std::cerr << e.what() << std::endl;
     return EXIT_FAILURE;
