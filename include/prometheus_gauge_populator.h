@@ -12,10 +12,12 @@ namespace gr::prometheus {
 class PrometheusGaugePopulator : virtual public block {
 private:
   /// the prometheus gauge we are populating with this block
-  ::prometheus::Gauge& gauge_{};
+  ::prometheus::Gauge& gauge_;
 
 public:
   using sptr = boost::shared_ptr<PrometheusGaugePopulator>;
+
+  PrometheusGaugePopulator() = delete;
 
   explicit PrometheusGaugePopulator(::prometheus::Gauge& gauge);
 
