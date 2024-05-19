@@ -6,12 +6,10 @@
 
 #include <prometheus/gauge.h>
 
-#include <gmock/gmock.h>
-
 namespace gr::prometheus {
 
 /// This block takes a float as an input and writes in into a prometheus gauge
-class PrometheusGaugePopulator : public block {
+class PrometheusGaugePopulator : virtual public block {
 private:
   /// the prometheus gauge we are populating with this block
   ::prometheus::Gauge& gauge_;
@@ -25,7 +23,6 @@ public:
 
   int general_work(int noutput_items, gr_vector_int& ninput_items, gr_vector_const_void_star& input_items,
                    gr_vector_void_star& output_items) override;
-
 };
 
 } // namespace gr::prometheus
