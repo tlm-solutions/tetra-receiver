@@ -35,7 +35,8 @@ TEST(config /*unused*/, CreatingPrometheusServer/*unused*/) {
   auto& stream_signal_strength = signal_strength.Add(
       {{"frequency", std::to_string(2.0)}, {"name", "test"}});
 
-  auto populator = PrometheusGaugePopulatorMock::make(/*gauge=*/stream_signal_strength);
+  testing::NiceMock<PrometheusGaugePopulatorMock> populator{/*gauge=*/stream_signal_strength};
+  EXPECT_CALL(populator, consume_each);
 
   int noutput_items = 1;
   gr_vector_int ninput_items;
@@ -47,15 +48,12 @@ TEST(config /*unused*/, CreatingPrometheusServer/*unused*/) {
   input_items[0] = &vec;
   gr_vector_void_star output_items;
 
-  populator->general_work(noutput_items, ninput_items, input_items, output_items);
+  populator.general_work(noutput_items, ninput_items, input_items, output_items);
 
   std::cout << name << std::endl;
   for (auto x : labels) {
     std::cout << x.first << "/" << x.second << std::endl;
   }
-
-
-
 
   /*EXPECT_EQ(slice.center_frequency_, 1000);
   EXPECT_EQ(slice.frequency_range_.lower_bound(), 900);
