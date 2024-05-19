@@ -8,13 +8,12 @@ set(BUILD_GMOCK OFF CACHE BOOL "" FORCE)
 
 add_executable(
     unit_tests
-		main.cpp
 		config_test.cpp
-		prometheus_test.cpp
+		main.cpp
 )
 
 #target_include_directories(unit_tests PUBLIC ${GTEST_INCLUDE_DIR})
 target_link_libraries(unit_tests PUBLIC ${GTEST_LIBRARIES})
-target_link_libraries(unit_tests PRIVATE lib-tetra-receiver gmock)
+target_link_libraries(unit_tests PRIVATE lib-tetra-receiver)
 
 install(TARGETS unit_tests DESTINATION bin)
