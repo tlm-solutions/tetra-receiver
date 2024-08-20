@@ -88,7 +88,7 @@ private:
     auto digital_constellation_decoder_cb = gr::digital::constellation_decoder_cb::make(constellation);
     auto digital_map_bb = gr::digital::map_bb::make(constellation->pre_diff_code());
     auto blocks_unpack_k_bits_bb = gr::blocks::unpack_k_bits_bb::make(constellation->bits_per_symbol());
-    auto blocks_udp_sink = gr::blocks::udp_sink::make(sizeof(char), stream.host_, stream.port_, 65467, false);
+    auto blocks_udp_sink = gr::blocks::udp_sink::make(sizeof(char), stream.host_, stream.port_, 1472, false);
 
     tb->connect(input, 0, xlat, 0);
     tb->connect(xlat, 0, mmse_resampler_cc, 0);
@@ -123,8 +123,8 @@ private:
     }
   };
 
-  static auto from_config(const config::Decimate& decimate, ApplicationData& app_data,
-                          gr::basic_block_sptr input) -> void {
+  static auto from_config(const config::Decimate& decimate, ApplicationData& app_data, gr::basic_block_sptr input)
+      -> void {
     auto& tb = app_data.tb;
 
     float half_sample_rate = decimate.spectrum_.sample_rate_ / 2;
