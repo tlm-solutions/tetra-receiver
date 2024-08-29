@@ -20,12 +20,13 @@
             ];
           };
 
+          gr-clenabled = pkgs.callPackage ./pkgs/gr-clenabled.nix { };
           tetra-receiver = pkgs.callPackage ./pkgs/tetra-receiver.nix { };
         in
         rec {
           checks = packages;
           packages = {
-            tetra-receiver = tetra-receiver;
+            inherit gr-clenabled tetra-receiver;
             default = tetra-receiver;
           };
         }
