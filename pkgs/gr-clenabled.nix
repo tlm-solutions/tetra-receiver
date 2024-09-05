@@ -1,14 +1,16 @@
 { pkg-config
 , cmake
-, gnuradio
+, gnuradio3_8
 , log4cpp
 , mpir
 , gmp
 , fftwFloat
-, rocmPackages
+, opencl-headers
+, ocl-icd
 , opencl-clhpp
 , clfft
 , cppunit
+, python3
 , fetchFromGitHub
 , stdenv
 }:
@@ -22,8 +24,8 @@ stdenv.mkDerivation rec {
     rev = version;
     sha256 = "sha256-n8jDcjQfopo/9XZNrquGTO4dp3ErXnwH+ABgmbTawiA=";
   };
-  buildInputs = [ gnuradio log4cpp mpir gmp gnuradio.boost gnuradio.volk fftwFloat rocmPackages.clr opencl-clhpp clfft cppunit ];
+  buildInputs = [ gnuradio3_8.unwrapped log4cpp mpir gmp gnuradio3_8.unwrapped.boost gnuradio3_8.unwrapped.volk python3 fftwFloat ocl-icd opencl-headers opencl-clhpp clfft cppunit ];
   nativeBuildInputs = [ cmake pkg-config ];
   cmakeFlags = [ "-DENABLE_PYTHON=OFF" ];
-  # outputs = [ "out" ];
+  patches = [ ./gr-clenabled-use-correct-opencl.patch ];
 }

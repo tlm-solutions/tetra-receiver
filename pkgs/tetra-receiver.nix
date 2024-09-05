@@ -1,7 +1,7 @@
 { pkg-config
 , cmake
-, gnuradio
-, gnuradioPackages
+, gnuradio3_8
+, gnuradio3_8Packages
 , log4cpp
 , mpir
 , gmpxx
@@ -39,7 +39,7 @@ let
 			cp -r cmake $out/
 		'';
 	};
-  osmosdr = gnuradioPackages.osmosdr.overrideAttrs(_oldAttrs: {
+  osmosdr = gnuradio3_8Packages.osmosdr.overrideAttrs(_oldAttrs: {
     outputs = [ "out" ];
   });
 in
@@ -53,10 +53,10 @@ stdenv.mkDerivation rec {
   buildInputs = [
     log4cpp
     mpir
-    gnuradio.unwrapped
-    gnuradio.unwrapped.boost.dev
+    gnuradio3_8.unwrapped
+    gnuradio3_8.unwrapped.boost.dev
     gmpxx.dev
-    gnuradio.unwrapped.volk
+    gnuradio3_8.unwrapped.volk
     osmosdr
     cxxopts
     toml11
