@@ -63,9 +63,9 @@ private:
     auto sample_rate = stream.input_spectrum_.sample_rate_;
 
     float half_sample_rate = stream.spectrum_.sample_rate_ / 2;
-    auto xlat_taps = gr::filter::firdes::complex_band_pass(1, stream.input_spectrum_.sample_rate_, -half_sample_rate,
+    auto xlat_taps = gr::filter::firdes::low_pass(1, stream.input_spectrum_.sample_rate_,
                                                            half_sample_rate, half_sample_rate * 0.2);
-    auto xlat = gr::filter::freq_xlating_fir_filter_ccc::make(decimation, xlat_taps, offset,
+    auto xlat = gr::filter::freq_xlating_fir_filter_ccf::make(decimation, xlat_taps, offset,
                                                               stream.input_spectrum_.sample_rate_);
 
     auto channel_rate = 36000;
@@ -130,9 +130,9 @@ private:
     float half_sample_rate = decimate.spectrum_.sample_rate_ / 2;
     auto offset = static_cast<int>(decimate.spectrum_.center_frequency_) -
                   static_cast<int>(decimate.input_spectrum_.center_frequency_);
-    auto xlat_taps = gr::filter::firdes::complex_band_pass(1, decimate.input_spectrum_.sample_rate_, -half_sample_rate,
+    auto xlat_taps = gr::filter::firdes::low_pass(1, decimate.input_spectrum_.sample_rate_,
                                                            half_sample_rate, half_sample_rate * 0.2);
-    auto xlat = gr::filter::freq_xlating_fir_filter_ccc::make(decimate.decimation_, xlat_taps, offset,
+    auto xlat = gr::filter::freq_xlating_fir_filter_ccf::make(decimate.decimation_, xlat_taps, offset,
                                                               decimate.input_spectrum_.sample_rate_);
 
     tb->connect(input, 0, xlat, 0);
