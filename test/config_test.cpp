@@ -150,11 +150,13 @@ TEST(config, TopLevel_valid_parser) {
 		
 		[DecimateA.Stream1]
 		Frequency = 4250100
+		SendIQ = false
 		
 		[Stream2]
 		Frequency = 4000100
 		Host = "127.0.0.2"
 		Port = 4200
+		SendIQ = true
 	)"_toml;
 
   const config::TopLevel t = toml::get<config::TopLevel>(config_object);
@@ -187,6 +189,7 @@ TEST(config, TopLevel_valid_parser) {
   EXPECT_EQ(stream_0.host_, "127.0.0.1");
   EXPECT_EQ(stream_0.port_, 4100);
   EXPECT_EQ(stream_0.decimation_, 20);
+  EXPECT_EQ(stream_0.send_iq_, false);
 
   EXPECT_EQ(stream_1.name_, "Stream1");
   EXPECT_EQ(stream_1.spectrum_.center_frequency_, 4250100);
@@ -194,6 +197,7 @@ TEST(config, TopLevel_valid_parser) {
   EXPECT_EQ(stream_1.host_, config::kDefaultHost);
   EXPECT_EQ(stream_1.port_, config::kDefaultPort);
   EXPECT_EQ(stream_1.decimation_, 20);
+  EXPECT_EQ(stream_1.send_iq_, false);
 
   EXPECT_EQ(t.streams_.size(), 1);
   const auto& stream_2 = t.streams_[0];
@@ -204,4 +208,5 @@ TEST(config, TopLevel_valid_parser) {
   EXPECT_EQ(stream_2.host_, "127.0.0.2");
   EXPECT_EQ(stream_2.port_, 4200);
   EXPECT_EQ(stream_2.decimation_, 40);
+  EXPECT_EQ(stream_2.send_iq_, true);
 }

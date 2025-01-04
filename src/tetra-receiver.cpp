@@ -202,6 +202,7 @@ auto main(int argc, char** argv) -> int {
       ("offsets", "offsets of the TETRA streams", cxxopts::value<std::vector<int>>())
       ("samp-rate", "Sample rate of the sdr", cxxopts::value<unsigned int>()->default_value("1000000"))
       ("udp-start", "Start UDP port. Each stream gets its own UDP port, starting at udp-start", cxxopts::value<uint16_t>()->default_value("42000"))
+      ("iq", "Send out iq data instead of decoded bits.")
       ;
     // clang-format on
 
@@ -229,6 +230,7 @@ auto main(int argc, char** argv) -> int {
       const auto bb_gain = result["bb"].as<unsigned int>();
       const auto& offsets = result["offsets"].as<std::vector<int>>();
       const auto udp_start = result["udp-start"].as<uint16_t>();
+      const bool iq_data = result.count("iq");
 
       std::vector<config::Stream> streams;
       const auto input_spectrum = config::SpectrumSlice(center_frequency, sample_rate);
@@ -241,7 +243,8 @@ auto main(int argc, char** argv) -> int {
         const auto tetra_spectrum = config::SpectrumSlice(stream_frequency, config::kTetraSampleRate);
         std::string name = "Stream " + std::to_string(stream_frequency);
 
-        streams.emplace_back(config::Stream(name, input_spectrum, tetra_spectrum, config::kDefaultHost, udp_port));
+        streams.emplace_back(
+            config::Stream(name, input_spectrum, tetra_spectrum, config::kDefaultHost, udp_port, iq_data));
       }
 
       config::TopLevel top(input_spectrum, device_string, rf_gain, if_gain, bb_gain,

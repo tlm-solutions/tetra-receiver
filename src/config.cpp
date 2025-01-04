@@ -3,12 +3,13 @@
 namespace config {
 
 Stream::Stream(const std::string& name, const SpectrumSlice<unsigned int>& input_spectrum,
-               const SpectrumSlice<unsigned int>& spectrum, std::string host, uint16_t port)
+               const SpectrumSlice<unsigned int>& spectrum, std::string host, uint16_t port, bool send_iq)
     : name_(name)
     , input_spectrum_(input_spectrum)
     , spectrum_(spectrum)
     , host_(std::move(host))
-    , port_(port) {
+    , port_(port)
+    , send_iq_(send_iq) {
   // check that this Stream is valid
   if (!input_spectrum.frequency_range_.contains(spectrum.frequency_range_)) {
     throw std::invalid_argument("Frequency Range of the Streams in not "

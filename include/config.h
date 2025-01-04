@@ -99,6 +99,8 @@ public:
   /// The port to which the samples of the Stream should be sent. This defaults
   /// to 42000.
   const uint16_t port_ = 0;
+  /// True if we send out iq data.
+  const bool send_iq_;
 
   Stream() = delete;
 
@@ -109,8 +111,9 @@ public:
   /// \param spectrum the slice of spectrum of the TETRA Stream
   /// \param host the to send the data to
   /// \param port the port to send the data to
+  /// \param send_iq do we send decoded bits or iq data.
   Stream(const std::string& name, const SpectrumSlice<unsigned int>& input_spectrum,
-         const SpectrumSlice<unsigned int>& spectrum, std::string host, uint16_t port);
+         const SpectrumSlice<unsigned int>& spectrum, std::string host, uint16_t port, bool send_iq);
 };
 
 class Decimate {
@@ -203,14 +206,16 @@ static config::decimate_or_stream get_decimate_or_stream(const config::SpectrumS
 
   const std::string host = find_or(v, "Host", config::kDefaultHost);
   const uint16_t port = find_or(v, "Port", config::kDefaultPort);
-
   // If we have a sample rate specified this is a Decimate, otherwhise this is
   // a Stream.
   if (sample_rate.has_value()) {
     return config::Decimate(name, input_spectrum, config::SpectrumSlice<unsigned int>(frequency, *sample_rate));
   } else {
+    const bool send_iq = find_or(v, "SendIQ", false);
+
     return config::Stream(name, input_spectrum,
-                          config::SpectrumSlice<unsigned int>(frequency, config::kTetraSampleRate), host, port);
+                          config::SpectrumSlice<unsigned int>(frequency, config::kTetraSampleRate), host, port,
+                          send_iq);
   }
 }
 
