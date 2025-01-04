@@ -85,10 +85,6 @@ private:
         gr::digital::pfb_clock_sync_ccf::make(sps, 2 * M_PI / 100.0f, rrc_taps, nfilts, nfilts / 2.0, 1.5, sps);
     auto digital_cma_equalizer_cc = gr::digital::cma_equalizer_cc::make(15, 1, 10e-3, sps);
     auto diff_phasor_cc = gr::digital::diff_phasor_cc::make();
-    auto digital_constellation_decoder_cb = gr::digital::constellation_decoder_cb::make(constellation);
-    auto digital_map_bb = gr::digital::map_bb::make(constellation->pre_diff_code());
-    auto blocks_unpack_k_bits_bb = gr::blocks::unpack_k_bits_bb::make(constellation->bits_per_symbol());
-    auto blocks_udp_sink = gr::blocks::udp_sink::make(sizeof(char), stream.host_, stream.port_, 1472, false);
 
     tb->connect(input, 0, xlat, 0);
     tb->connect(xlat, 0, mmse_resampler_cc, 0);
@@ -97,10 +93,22 @@ private:
     tb->connect(digital_fll_band_edge_cc, 0, digital_pfb_clock_sync_xxx, 0);
     tb->connect(digital_pfb_clock_sync_xxx, 0, digital_cma_equalizer_cc, 0);
     tb->connect(digital_cma_equalizer_cc, 0, diff_phasor_cc, 0);
-    tb->connect(diff_phasor_cc, 0, digital_constellation_decoder_cb, 0);
-    tb->connect(digital_constellation_decoder_cb, 0, digital_map_bb, 0);
-    tb->connect(digital_map_bb, 0, blocks_unpack_k_bits_bb, 0);
-    tb->connect(blocks_unpack_k_bits_bb, 0, blocks_udp_sink, 0);
+
+    if (stream.send_iq_) {
+      auto blocks_udp_sink = gr::blocks::udp_sink::make(sizeof(gr_complex), stream.host_, stream.port_, 1472, false);
+
+      tb->connect(diff_phasor_cc, 0, blocks_udp_sink, 0);
+    } else {
+      auto digital_constellation_decoder_cb = gr::digital::constellation_decoder_cb::make(constellation);
+      auto digital_map_bb = gr::digital::map_bb::make(constellation->pre_diff_code());
+      auto blocks_unpack_k_bits_bb = gr::blocks::unpack_k_bits_bb::make(constellation->bits_per_symbol());
+      auto blocks_udp_sink = gr::blocks::udp_sink::make(sizeof(char), stream.host_, stream.port_, 1472, false);
+
+      tb->connect(diff_phasor_cc, 0, digital_constellation_decoder_cb, 0);
+      tb->connect(digital_constellation_decoder_cb, 0, digital_map_bb, 0);
+      tb->connect(digital_map_bb, 0, blocks_unpack_k_bits_bb, 0);
+      tb->connect(blocks_unpack_k_bits_bb, 0, blocks_udp_sink, 0);
+    }
 
     // create blocks to save the power of the current channel if prometheus exporter is available
     if (app_data.exporter) {
