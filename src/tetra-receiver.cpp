@@ -68,37 +68,60 @@ private:
     auto xlat = gr::filter::freq_xlating_fir_filter_ccf::make(decimation, xlat_taps, offset,
                                                               stream.input_spectrum_.sample_rate_);
 
-    auto channel_rate = 36000;
-    auto sps = 2;
-    auto nfilts = 32;
-    auto constellation = gr::digital::constellation_dqpsk::make();
-    constellation->gen_soft_dec_lut(8);
-
-    auto rrc_taps =
-        gr::filter::firdes::root_raised_cosine(nfilts, nfilts, 1.0 / static_cast<float>(sps), 0.35, 11 * sps * nfilts);
-
-    auto mmse_resampler_cc = gr::filter::mmse_resampler_cc::make(
-        0, static_cast<float>(sample_rate) / (static_cast<float>(decimation) * static_cast<float>(channel_rate)));
-    auto agc = gr::analog::feedforward_agc_cc::make(8, 1);
-    auto digital_fll_band_edge_cc = gr::digital::fll_band_edge_cc::make(sps, 0.35, 45, M_PI / 100.0f);
-    auto digital_pfb_clock_sync_xxx =
-        gr::digital::pfb_clock_sync_ccf::make(sps, 2 * M_PI / 100.0f, rrc_taps, nfilts, nfilts / 2.0, 1.5, sps);
-    auto digital_cma_equalizer_cc = gr::digital::cma_equalizer_cc::make(15, 1, 10e-3, sps);
-    auto diff_phasor_cc = gr::digital::diff_phasor_cc::make();
-
-    tb->connect(input, 0, xlat, 0);
-    tb->connect(xlat, 0, mmse_resampler_cc, 0);
-    tb->connect(mmse_resampler_cc, 0, agc, 0);
-    tb->connect(agc, 0, digital_fll_band_edge_cc, 0);
-    tb->connect(digital_fll_band_edge_cc, 0, digital_pfb_clock_sync_xxx, 0);
-    tb->connect(digital_pfb_clock_sync_xxx, 0, digital_cma_equalizer_cc, 0);
-    tb->connect(digital_cma_equalizer_cc, 0, diff_phasor_cc, 0);
-
     if (stream.send_iq_) {
+      auto channel_rate = 18000;
+      auto sps = 1;
+      auto nfilts = 32;
+
+      auto rrc_taps =
+          gr::filter::firdes::root_raised_cosine(nfilts, nfilts, 1.0 / static_cast<float>(sps), 0.35, 11 * sps * nfilts);
+
+      auto mmse_resampler_cc = gr::filter::mmse_resampler_cc::make(
+          0, static_cast<float>(sample_rate) / (static_cast<float>(decimation) * static_cast<float>(channel_rate)));
+      auto agc = gr::analog::feedforward_agc_cc::make(8, 1);
+      auto digital_fll_band_edge_cc = gr::digital::fll_band_edge_cc::make(sps, 0.35, 45, M_PI / 100.0f);
+      auto digital_pfb_clock_sync_xxx =
+          gr::digital::pfb_clock_sync_ccf::make(sps, 2 * M_PI / 100.0f, rrc_taps, nfilts, nfilts / 2.0, 1.5, sps);
+      auto diff_phasor_cc = gr::digital::diff_phasor_cc::make();
+
+      tb->connect(input, 0, xlat, 0);
+      tb->connect(xlat, 0, mmse_resampler_cc, 0);
+      tb->connect(mmse_resampler_cc, 0, agc, 0);
+      tb->connect(agc, 0, digital_fll_band_edge_cc, 0);
+      tb->connect(digital_fll_band_edge_cc, 0, digital_pfb_clock_sync_xxx, 0);
+      tb->connect(digital_pfb_clock_sync_xxx, 0, diff_phasor_cc, 0);
+
       auto blocks_udp_sink = gr::blocks::udp_sink::make(sizeof(gr_complex), stream.host_, stream.port_, 1472, false);
 
       tb->connect(diff_phasor_cc, 0, blocks_udp_sink, 0);
     } else {
+      auto channel_rate = 36000;
+      auto sps = 2;
+      auto nfilts = 32;
+
+      auto rrc_taps =
+          gr::filter::firdes::root_raised_cosine(nfilts, nfilts, 1.0 / static_cast<float>(sps), 0.35, 11 * sps * nfilts);
+
+      auto mmse_resampler_cc = gr::filter::mmse_resampler_cc::make(
+          0, static_cast<float>(sample_rate) / (static_cast<float>(decimation) * static_cast<float>(channel_rate)));
+      auto agc = gr::analog::feedforward_agc_cc::make(8, 1);
+      auto digital_fll_band_edge_cc = gr::digital::fll_band_edge_cc::make(sps, 0.35, 45, M_PI / 100.0f);
+      auto digital_pfb_clock_sync_xxx =
+          gr::digital::pfb_clock_sync_ccf::make(sps, 2 * M_PI / 100.0f, rrc_taps, nfilts, nfilts / 2.0, 1.5, sps);
+      auto digital_cma_equalizer_cc = gr::digital::cma_equalizer_cc::make(15, 1, 10e-3, sps);
+      auto diff_phasor_cc = gr::digital::diff_phasor_cc::make();
+
+      tb->connect(input, 0, xlat, 0);
+      tb->connect(xlat, 0, mmse_resampler_cc, 0);
+      tb->connect(mmse_resampler_cc, 0, agc, 0);
+      tb->connect(agc, 0, digital_fll_band_edge_cc, 0);
+      tb->connect(digital_fll_band_edge_cc, 0, digital_pfb_clock_sync_xxx, 0);
+      tb->connect(digital_pfb_clock_sync_xxx, 0, digital_cma_equalizer_cc, 0);
+      tb->connect(digital_cma_equalizer_cc, 0, diff_phasor_cc, 0);
+
+      auto constellation = gr::digital::constellation_dqpsk::make();
+      constellation->gen_soft_dec_lut(8);
+
       auto digital_constellation_decoder_cb = gr::digital::constellation_decoder_cb::make(constellation);
       auto digital_map_bb = gr::digital::map_bb::make(constellation->pre_diff_code());
       auto blocks_unpack_k_bits_bb = gr::blocks::unpack_k_bits_bb::make(constellation->bits_per_symbol());
